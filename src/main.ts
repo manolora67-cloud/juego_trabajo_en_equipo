@@ -130,7 +130,6 @@ function setScreen(screen: ScreenName): void {
   element('setup-screen').classList.toggle('hidden', screen !== 'setup')
   element('game-screen').classList.toggle('hidden', screen !== 'game')
   element('records-screen').classList.toggle('hidden', screen !== 'records')
-  updateOrientationNotice()
   if (screen === 'game') {
     requestAnimationFrame(() => {
       game?.scale.refresh()
@@ -538,15 +537,7 @@ function setupControls(): void {
     gameState = 'setup'
     setScreen('setup')
   })
-  window.addEventListener('resize', updateOrientationNotice)
-  window.addEventListener('orientationchange', updateOrientationNotice)
-  updateOrientationNotice()
   refreshSetupStats()
-}
-
-function updateOrientationNotice(): void {
-  const portrait = window.matchMedia('(orientation: portrait)').matches
-  element('rotate-warning').classList.toggle('hidden', !portrait || currentScreen !== 'game' || gameState === 'finished')
 }
 
 class MazeScene extends Phaser.Scene {
@@ -677,4 +668,3 @@ class MazeScene extends Phaser.Scene {
 }
 
 setupControls()
-window.addEventListener('orientationchange', updateOrientationNotice)
