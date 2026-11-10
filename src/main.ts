@@ -497,17 +497,25 @@ function setupControls(): void {
     })
   })
 
-  const keyboard: Record<string, [PlayerId, Direction]> = {
-    ArrowUp: [0, 'up'], ArrowDown: [0, 'down'], ArrowLeft: [0, 'left'], ArrowRight: [0, 'right'],
-    w: [1, 'up'], s: [1, 'down'], a: [1, 'left'], d: [1, 'right'],
-    W: [1, 'up'], S: [1, 'down'], A: [1, 'left'], D: [1, 'right'],
+  const keyboardDirections: Record<string, [PlayerId, Direction]> = {
+    ArrowUp: [1, 'up'], ArrowDown: [1, 'down'], ArrowLeft: [1, 'left'], ArrowRight: [1, 'right'],
+    w: [0, 'up'], s: [0, 'down'], a: [0, 'left'], d: [0, 'right'],
   }
+  const keyboardSelect: Record<string, PlayerId> = { f: 0, Enter: 1 }
   window.addEventListener('keydown', (event) => {
-    if (event.target instanceof HTMLInputElement) return
-    const move = keyboard[event.key]
-    if (!move) return
-    event.preventDefault()
-    movePlayer(move[0], move[1])
+    if (event.target instanceof HTMLInputElement || currentScreen !== 'game' || gameState !== 'active') return
+    const key = event.key.length === 1 ? event.key.toLowerCase() : event.key
+    const move = keyboardDirections[key]
+    if (move) {
+      event.preventDefault()
+      movePlayer(move[0], move[1])
+      return
+    }
+    const player = keyboardSelect[key]
+    if (player !== undefined) {
+      event.preventDefault()
+      if (!event.repeat) selectGate(player)
+    }
   })
 
   element('open-records').addEventListener('click', showRecords)
