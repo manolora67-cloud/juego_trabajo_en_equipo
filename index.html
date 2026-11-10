@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#143d2b" />
+    <meta name="description" content="SENA Team Challenge: juego local para dos jugadores." />
+    <title>SENA Team Challenge</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <main id="setup-screen" class="screen setup-screen">
+        <header class="topline">
+          <a class="wordmark" href="#inicio" aria-label="SENA Team Challenge, inicio">
+            <span class="brand-symbol" aria-hidden="true">S</span>
+            <span><strong>SENA</strong><small>TEAM CHALLENGE</small></span>
+          </a>
+          <button id="open-records" class="button button-quiet" type="button"><span aria-hidden="true">▤</span> Registro</button>
+        </header>
+        <div class="setup-layout">
+          <section class="intro-panel">
+            <p class="eyebrow"><span class="eyebrow-dot"></span> RETO DE TRABAJO EN EQUIPO</p>
+            <h1>Dos rutas.<br /><em>Una meta.</em></h1>
+            <p class="intro-copy">Elijan su nombre, encuentren la respuesta y crucen la puerta correcta.</p>
+            <img class="maze-art" src="./maze-art.svg" alt="Laberinto verde con cuatro puertas de respuesta" />
+            <div class="round-stamp"><strong>10</strong><span>preguntas<br />por partida</span></div>
+          </section>
+          <section class="setup-form-panel" aria-labelledby="setup-title">
+            <div class="panel-kicker">NUEVA PARTIDA <span></span></div>
+            <h2 id="setup-title">¿Quiénes juegan?</h2>
+            <p class="panel-copy">Escriban nombres distintos para identificar sus resultados.</p>
+            <form id="players-form" novalidate>
+              <label class="name-field" for="player-one">
+                <span class="field-label"><span class="player-dot p1-dot"></span> JUGADOR 1 <small>VERDE</small></span>
+                <input id="player-one" name="playerOne" maxlength="20" autocomplete="off" placeholder="Nombre del jugador 1" required />
+              </label>
+              <label class="name-field" for="player-two">
+                <span class="field-label"><span class="player-dot p2-dot"></span> JUGADOR 2 <small>OLIVA</small></span>
+                <input id="player-two" name="playerTwo" maxlength="20" autocomplete="off" placeholder="Nombre del jugador 2" required />
+              </label>
+              <p id="form-error" class="form-error" role="alert"></p>
+              <button class="button button-primary start-button" type="submit">Iniciar partida <span aria-hidden="true">→</span></button>
+            </form>
+            <div class="local-note"><span aria-hidden="true">◉</span><span>Resultados guardados en este dispositivo.</span></div>
+            <div class="setup-stats"><span><strong id="setup-match-count">0</strong> partidas registradas</span><button id="setup-view-records" type="button">Ver reporte <span aria-hidden="true">↗</span></button></div>
+          </section>
+        </div>
+        <footer class="setup-footer"><span>FORMACIÓN · COLABORACIÓN · INNOVACIÓN</span><span>JUEGO LOCAL PARA 2</span></footer>
+      </main>
+
+      <main id="game-screen" class="screen game-screen hidden">
+        <header class="game-header">
+          <button id="leave-game" class="icon-button" type="button" aria-label="Volver al inicio" title="Volver al inicio">←</button>
+          <div class="game-brand"><span class="brand-symbol small-symbol" aria-hidden="true">S</span><span>SENA <b>TEAM CHALLENGE</b></span></div>
+          <div class="round-counter"><span>RONDA</span><strong><b id="round-current">01</b><i>/</i>10</strong></div>
+          <div class="timer-block"><span>TIEMPO</span><strong id="timer-value">45</strong><small>s</small></div>
+          <button id="game-records" class="icon-button records-icon" type="button" aria-label="Ver reporte" title="Ver reporte">▤</button>
+        </header>
+        <section class="question-strip" aria-live="polite">
+          <div class="question-copy">
+            <div class="question-meta"><span id="question-category">FORMATIVA</span><span class="question-number">PREGUNTA <b id="question-number">01</b></span></div>
+            <h1 id="question-text"></h1>
+            <div id="answer-options" class="answer-options"></div>
+          </div>
+          <div class="scoreboard" aria-label="Puntaje">
+            <div class="score-player"><span class="score-name p1-name" id="score-name-one">P1</span><strong id="score-one">0</strong></div>
+            <div class="score-divider" aria-hidden="true">:</div>
+            <div class="score-player"><span class="score-name p2-name" id="score-name-two">P2</span><strong id="score-two">0</strong></div>
+          </div>
+        </section>
+        <div class="timer-track"><span id="timer-bar"></span></div>
+        <section class="play-zone" aria-label="Laberinto y controles">
+          <aside class="controller controller-one" aria-label="Controles del jugador 1">
+            <div class="controller-title"><span class="player-dot p1-dot"></span><span id="pad-name-one">P1</span></div>
+            <div class="dpad" data-player="0">
+              <button class="pad-key key-up" type="button" data-direction="up" aria-label="Jugador 1 arriba">▲</button>
+              <button class="pad-key key-left" type="button" data-direction="left" aria-label="Jugador 1 izquierda">◀</button>
+              <button class="pad-key key-down" type="button" data-direction="down" aria-label="Jugador 1 abajo">▼</button>
+              <button class="pad-key key-right" type="button" data-direction="right" aria-label="Jugador 1 derecha">▶</button>
+            </div>
+            <button class="select-button" type="button" data-select="0">SELECT <span>↵</span></button>
+          </aside>
+          <div id="maze-frame" class="maze-frame">
+            <div id="maze-root" aria-label="Laberinto con puertas A, B, C y D"></div>
+            <div class="maze-caption"><span><i class="legend-dot p1-dot"></i><span id="maze-name-one">JUGADOR 1</span></span><span>ELIGE LA PUERTA CORRECTA</span><span><i class="legend-dot p2-dot"></i><span id="maze-name-two">JUGADOR 2</span></span></div>
+          </div>
+          <aside class="controller controller-two" aria-label="Controles del jugador 2">
+            <div class="controller-title"><span class="player-dot p2-dot"></span><span id="pad-name-two">P2</span></div>
+            <div class="dpad" data-player="1">
+              <button class="pad-key key-up" type="button" data-direction="up" aria-label="Jugador 2 arriba">▲</button>
+              <button class="pad-key key-left" type="button" data-direction="left" aria-label="Jugador 2 izquierda">◀</button>
+              <button class="pad-key key-down" type="button" data-direction="down" aria-label="Jugador 2 abajo">▼</button>
+              <button class="pad-key key-right" type="button" data-direction="right" aria-label="Jugador 2 derecha">▶</button>
+            </div>
+            <button class="select-button" type="button" data-select="1">SELECT <span>↵</span></button>
+          </aside>
+        </section>
+        <div id="game-status" class="game-status" role="status" aria-live="polite">Alcanza una puerta y pulsa SELECT para confirmar.</div>
+        <div id="rotate-warning" class="rotate-warning hidden"><span aria-hidden="true">▱</span><strong>Gira tu dispositivo</strong><p>El reto se juega en pantalla horizontal.</p></div>
+        <div id="result-overlay" class="modal-layer hidden" role="dialog" aria-modal="true" aria-labelledby="result-title">
+          <div class="result-modal"><div class="result-leaf" aria-hidden="true">✳</div><p class="eyebrow">PARTIDA COMPLETADA</p><h2 id="result-title"></h2><p id="result-summary" class="result-summary"></p><div class="result-scores"><div><span id="result-name-one"></span><strong id="result-score-one">0</strong></div><b>:</b><div><span id="result-name-two"></span><strong id="result-score-two">0</strong></div></div><p id="save-confirmation" class="save-confirmation"></p><div class="result-actions"><button id="play-again" class="button button-primary" type="button">Jugar de nuevo <span aria-hidden="true">↻</span></button><button id="result-records" class="button button-outline" type="button">Ver reporte</button><button id="result-home" class="text-button" type="button">Volver al inicio</button></div></div>
+        </div>
+        <div id="feedback-overlay" class="modal-layer hidden" role="dialog" aria-modal="true" aria-labelledby="feedback-title">
+          <div class="feedback-modal"><p id="feedback-kicker" class="eyebrow">RETROALIMENTACIÓN</p><h2 id="feedback-title">Respuesta de la ronda</h2><div id="incorrect-review" class="incorrect-review"></div><section class="correct-answer"><span>RESPUESTA CORRECTA <b id="feedback-correct-key"></b></span><strong id="feedback-correct-text"></strong><p id="feedback-rationale"></p></section><button id="continue-round" class="button button-primary" type="button">Siguiente pregunta <span aria-hidden="true">→</span></button></div>
+        </div>
+      </main>
+
+      <main id="records-screen" class="screen records-screen hidden">
+        <header class="records-header"><button id="records-back" class="icon-button" type="button" aria-label="Volver">←</button><div class="game-brand"><span class="brand-symbol small-symbol" aria-hidden="true">S</span><span>SENA <b>REPORTE DE PARTIDAS</b></span></div><span class="records-device-note">DATOS LOCALES</span></header>
+        <section class="report-heading"><div><p class="eyebrow">SEGUIMIENTO DE RESULTADOS</p><h1>Registro de <em>partidas</em></h1><p>Historial y puntajes guardados en este navegador.</p></div><div class="report-actions"><button id="export-csv" class="button button-outline" type="button"><span aria-hidden="true">↓</span> Exportar CSV</button><button id="clear-records" class="button button-danger" type="button">Borrar datos</button></div></section>
+        <section class="stat-grid" aria-label="Resumen">
+          <article class="stat-item"><span>PARTIDAS</span><strong id="stat-matches">0</strong><small>completadas</small></article>
+          <article class="stat-item"><span>PERSONAS</span><strong id="stat-people">0</strong><small>jugadores únicos</small></article>
+          <article class="stat-item"><span>PARTICIPACIONES</span><strong id="stat-appearances">0</strong><small>puestos en juego</small></article>
+          <article class="stat-item stat-highlight"><span>LÍDER EN VICTORIAS</span><strong id="stat-leader">—</strong><small id="stat-leader-wins">sin victorias todavía</small></article>
+        </section>
+        <section class="report-columns">
+          <div class="report-section"><div class="section-heading"><h2>Tabla de jugadores</h2><span id="ranking-count">0 jugadores</span></div><div class="table-scroll"><table><thead><tr><th>JUGADOR</th><th>PARTIDAS</th><th>VICTORIAS</th><th>PUNTOS</th></tr></thead><tbody id="ranking-body"></tbody></table></div></div>
+          <div class="report-section history-section"><div class="section-heading"><h2>Últimas partidas</h2><span id="history-count">0 registros</span></div><div id="history-list" class="history-list"></div></div>
+        </section>
+        <footer class="report-footer"><span>Los datos permanecen en este dispositivo y navegador.</span><span>Descarga el CSV para conservar una copia externa.</span></footer>
+      </main>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
