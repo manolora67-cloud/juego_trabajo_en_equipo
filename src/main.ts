@@ -130,12 +130,20 @@ function setScreen(screen: ScreenName): void {
   element('setup-screen').classList.toggle('hidden', screen !== 'setup')
   element('game-screen').classList.toggle('hidden', screen !== 'game')
   element('records-screen').classList.toggle('hidden', screen !== 'records')
-  if (screen === 'game') {
+  if (screen === 'game') refreshGameLayout()
+}
+
+function refreshGameLayout(): void {
+  const activeGame = game
+  if (!activeGame || currentScreen !== 'game') return
+
+  requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      game?.scale.refresh()
+      if (game !== activeGame || currentScreen !== 'game') return
+      activeGame.scale.refresh()
       mazeScene?.redraw()
     })
-  }
+  })
 }
 
 function setStatus(message: string, tone: 'neutral' | 'good' | 'bad' = 'neutral'): void {
@@ -218,6 +226,7 @@ function startGame(names = playerNames): void {
   questionIndex = 0
   wrongAttempts = []
   timeExpired = false
+  resetPlayers()
   gameState = 'active'
   element('feedback-overlay').classList.add('hidden')
   element('result-overlay').classList.add('hidden')
@@ -227,15 +236,12 @@ function startGame(names = playerNames): void {
   setStatus('Alcanza una puerta y pulsa SELECT para confirmar.')
   startTimer()
   ensureGame()
-  window.setTimeout(() => {
-    mazeScene?.resetPositions()
-    mazeScene?.redraw()
-  }, 80)
+  refreshGameLayout()
 }
 
 function ensureGame(): void {
   if (game) return
-  game = new Phaser.Game({
+  const newGame = new Phaser.Game({
     type: Phaser.CANVAS,
     parent: 'maze-root',
     backgroundColor: '#245a3c',
@@ -244,6 +250,8 @@ function ensureGame(): void {
     scene: [MazeScene],
     audio: { noAudio: true },
   })
+  game = newGame
+  newGame.events.once(Phaser.Core.Events.READY, refreshGameLayout)
 }
 
 function movePlayer(player: PlayerId, direction: Direction): void {
@@ -520,7 +528,6 @@ function setupControls(): void {
 
   element('open-records').addEventListener('click', showRecords)
   element('setup-view-records').addEventListener('click', showRecords)
-  element('game-records').addEventListener('click', showRecords)
   element('result-records').addEventListener('click', showRecords)
   element('records-back').addEventListener('click', closeRecords)
   element('export-csv').addEventListener('click', exportCsv)
