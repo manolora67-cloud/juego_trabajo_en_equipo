@@ -101,7 +101,7 @@
         </section>
         <div id="game-status" class="game-status" role="status" aria-live="polite">Alcanza una puerta y pulsa SELECT para confirmar.</div>
         <div id="result-overlay" class="modal-layer hidden" role="dialog" aria-modal="true" aria-labelledby="result-title">
-          <div class="result-modal"><div class="result-leaf" aria-hidden="true">✳</div><p class="eyebrow">PARTIDA COMPLETADA</p><h2 id="result-title"></h2><p id="result-summary" class="result-summary"></p><div class="result-scores"><div><span id="result-name-one"></span><strong id="result-score-one">0</strong></div><b>:</b><div><span id="result-name-two"></span><strong id="result-score-two">0</strong></div></div><p id="save-confirmation" class="save-confirmation"></p><div class="result-actions"><button id="play-again" class="button button-primary" type="button">Jugar de nuevo <span aria-hidden="true">↻</span></button><button id="result-records" class="button button-outline" type="button">Ver reporte</button><button id="result-home" class="text-button" type="button">Volver al inicio</button></div></div>
+          <div class="result-modal"><div class="result-leaf" aria-hidden="true">✳</div><p class="eyebrow">PARTIDA COMPLETADA</p><h2 id="result-title"></h2><p id="result-summary" class="result-summary"></p><div class="result-scores"><div><span id="result-name-one"></span><strong id="result-score-one">0</strong><button class="result-detail-button" type="button" data-result-player="0">Ver mis resultados</button></div><b>:</b><div><span id="result-name-two"></span><strong id="result-score-two">0</strong><button class="result-detail-button" type="button" data-result-player="1">Ver mis resultados</button></div></div><p id="save-confirmation" class="save-confirmation"></p><div class="result-actions"><button id="play-again" class="button button-primary" type="button">Jugar de nuevo <span aria-hidden="true">↻</span></button><button id="result-records" class="button button-outline" type="button">Ver reporte</button><button id="result-home" class="text-button" type="button">Volver al inicio</button></div></div>
         </div>
         <div id="feedback-overlay" class="modal-layer hidden" role="dialog" aria-modal="true" aria-labelledby="feedback-title">
           <div class="feedback-modal"><p id="feedback-kicker" class="eyebrow">RETROALIMENTACIÓN</p><h2 id="feedback-title">Respuesta de la ronda</h2><div id="incorrect-review" class="incorrect-review"></div><section class="correct-answer"><span>RESPUESTA CORRECTA <b id="feedback-correct-key"></b></span><strong id="feedback-correct-text"></strong><p id="feedback-rationale"></p></section><button id="continue-round" class="button button-primary" type="button">Siguiente pregunta <span aria-hidden="true">→</span></button></div>
@@ -134,6 +134,15 @@
         </section>
         <footer class="report-footer"><span>Las partidas compartidas son visibles para cualquiera que tenga acceso al reporte.</span><span>Descarga el CSV para conservar una copia externa.</span></footer>
       </main>
+      <div id="match-details-overlay" class="modal-layer match-details-layer hidden" role="dialog" aria-modal="true" aria-labelledby="match-details-title">
+        <section class="match-details-modal">
+          <button id="match-details-close" class="match-details-close" type="button" aria-label="Cerrar resultados">×</button>
+          <p class="eyebrow">RETROALIMENTACIÓN DE LA PARTIDA</p>
+          <h2 id="match-details-title"></h2>
+          <p id="match-details-summary" class="match-details-summary"></p>
+          <div id="match-details-body" class="match-details-body"></div>
+        </section>
+      </div>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>

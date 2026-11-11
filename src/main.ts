@@ -4,7 +4,7 @@ import {
   sharedMatchesConfigured,
   uploadMatches,
 } from './shared-matches'
-import type { MatchRecord, MatchWinner } from './shared-matches'
+import type { MatchAnswer, MatchRecord, MatchWinner } from './shared-matches'
 
 type PlayerId = 0 | 1
 type Direction = 'up' | 'down' | 'left' | 'right'
@@ -82,11 +82,13 @@ let secondsLeft = 45
 let timerInterval: number | undefined
 let feedbackTimeout: number | undefined
 let wrongAttempts: { player: PlayerId; answer: OptionKey }[] = []
+let matchAnswers: MatchAnswer[] = []
 let timeExpired = false
 let game: Phaser.Game | undefined
 let mazeScene: MazeScene | undefined
 let lastSaveSucceeded = true
 let refreshInProgress = false
+let detailsReturnToResults = false
 
 function element<T extends HTMLElement>(id: string): T {
   const found = document.getElementById(id)
@@ -124,6 +126,14 @@ function loadMatches(): MatchRecord[] {
           : typeof match.winner === 'string'
             ? match.winner === playerOne.name ? 0 : match.winner === playerTwo.name ? 1 : null
             : null
+      const answers = Array.isArray(match.answers)
+        ? match.answers.filter((answer): answer is MatchAnswer =>
+          Boolean(answer && typeof answer === 'object' &&
+            'questionId' in answer && typeof answer.questionId === 'number' &&
+            'player' in answer && (answer.player === 0 || answer.player === 1) &&
+            'selected' in answer && ['A', 'B', 'C', 'D'].includes(String(answer.selected))),
+        )
+        : null
       return [{
         id: match.id,
         completedAt: match.completedAt,
@@ -132,6 +142,7 @@ function loadMatches(): MatchRecord[] {
           { name: playerTwo.name, score: playerTwo.score },
         ],
         winner,
+        answers,
       }]
     })
   } catch {
@@ -256,6 +267,7 @@ function startGame(names = playerNames): void {
   positions[1].score = 0
   questionIndex = 0
   wrongAttempts = []
+  matchAnswers = []
   timeExpired = false
   resetPlayers()
   gameState = 'active'
@@ -317,6 +329,7 @@ function selectGate(player: PlayerId): void {
     setStatus(`${playerNames[player]}: llega a una puerta antes de pulsar SELECT.`)
     return
   }
+  matchAnswers.push({ questionId: currentQuestion().id, player, selected: gate.letter })
   if (gate.letter === currentQuestion().correct) {
     positions[player].score += 1
     updateScoreboard()
@@ -388,6 +401,7 @@ function finishGame(): void {
     completedAt: new Date().toISOString(),
     players: [{ name: playerNames[0], score: first }, { name: playerNames[1], score: second }],
     winner,
+    answers: [...matchAnswers],
   }
   localMatches.push(record)
   matches = mergeMatches(matches, [record])
@@ -398,6 +412,8 @@ function finishGame(): void {
   element('result-name-two').textContent = playerNames[1]
   element('result-score-one').textContent = String(first)
   element('result-score-two').textContent = String(second)
+  element<HTMLButtonElement>('result-details-one').dataset.matchId = record.id
+  element<HTMLButtonElement>('result-details-two').dataset.matchId = record.id
   element('save-confirmation').textContent = lastSaveSucceeded
     ? sharedMatchesConfigured ? 'Guardada en este dispositivo. Sincronizando con el reporte público…' : 'Partida guardada en este dispositivo.'
     : 'No se pudo guardar en este dispositivo. Revisa el espacio disponible.'
@@ -456,9 +472,49 @@ function renderRecords(): void {
   element('history-list').innerHTML = history.length
     ? history.map((match) => {
       const winnerLabel = match.winner !== null ? `Ganó ${escapeHtml(match.players[match.winner].name)}` : 'Empate'
-      return `<article class="history-row"><div class="history-date">${new Date(match.completedAt).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })}</div><div class="history-match"><span>${escapeHtml(match.players[0].name)} <b>${match.players[0].score}</b></span><i>:</i><span>${escapeHtml(match.players[1].name)} <b>${match.players[1].score}</b></span></div><div class="history-winner">${winnerLabel}</div></article>`
+      const detailsLabel = match.answers !== null ? 'Ver resultados' : 'Detalle no disponible para esta partida'
+      return `<article class="history-row"><div class="history-date">${new Date(match.completedAt).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })}</div><div class="history-match"><button class="history-player" type="button" data-match-id="${escapeHtml(match.id)}" data-player="0" aria-label="${detailsLabel}: ${escapeHtml(match.players[0].name)}"><span class="history-player-name">${escapeHtml(match.players[0].name)}</span><b>${match.players[0].score}</b><small>Ver detalle</small></button><i>:</i><button class="history-player" type="button" data-match-id="${escapeHtml(match.id)}" data-player="1" aria-label="${detailsLabel}: ${escapeHtml(match.players[1].name)}"><span class="history-player-name">${escapeHtml(match.players[1].name)}</span><b>${match.players[1].score}</b><small>Ver detalle</small></button></div><div class="history-winner">${winnerLabel}</div></article>`
     }).join('')
     : '<div class="empty-history">Aún no hay partidas completadas.</div>'
+}
+
+function showMatchDetails(match: MatchRecord, playerIndex: PlayerId, returnToResults: boolean): void {
+  detailsReturnToResults = returnToResults
+  if (returnToResults) element('result-overlay').classList.add('hidden')
+  const player = match.players[playerIndex]
+  element('match-details-title').textContent = `Resultados de ${player.name}`
+  const summary = element('match-details-summary')
+  const body = element('match-details-body')
+
+  if (match.answers === null) {
+    summary.textContent = 'Esta partida no guardó el detalle de las respuestas. Las partidas anteriores a esta función no se pueden reconstruir.'
+    body.replaceChildren()
+  } else {
+    const playerAnswers = match.answers.filter((answer) => answer.player === playerIndex)
+    const categories = (['Formativa', 'Laboral'] as const).map((category) => {
+      const categoryQuestions = questions.filter((question) => question.category === category)
+      const correct = categoryQuestions.filter((question) =>
+        playerAnswers.some((answer) => answer.questionId === question.id && answer.selected === question.correct),
+      ).length
+      return { category, correct, total: categoryQuestions.length }
+    })
+    summary.textContent = `Aciertos en decisiones formativas: ${categories[0].correct} de ${categories[0].total}. Aciertos en decisiones laborales: ${categories[1].correct} de ${categories[1].total}. Esto resume tus elecciones de esta partida; no define quién eres.`
+    body.innerHTML = questions.map((question) => {
+      const attempts = playerAnswers.filter((answer) => answer.questionId === question.id)
+      const correct = attempts.some((answer) => answer.selected === question.correct)
+      const selection = attempts.length
+        ? attempts.map((answer) => `${answer.selected}: ${escapeHtml(question.options[answer.selected])}`).join(' → ')
+        : 'No respondió antes de terminar la ronda.'
+      const result = correct ? 'Acertaste' : attempts.length ? 'Para reflexionar' : 'Sin respuesta'
+      return `<article class="detail-question"><div class="detail-question-heading"><span>${question.category} · Pregunta ${question.id}</span><b class="${correct ? 'detail-correct' : 'detail-reflection'}">${result}</b></div><h3>${escapeHtml(question.question)}</h3><p><strong>Tu elección:</strong> ${selection}</p><p><strong>Respuesta colaborativa:</strong> ${question.correct}: ${escapeHtml(question.options[question.correct])}</p><p class="detail-rationale">${escapeHtml(feedbackByQuestion[question.id])}</p></article>`
+    }).join('')
+  }
+  element('match-details-overlay').classList.remove('hidden')
+}
+
+function closeMatchDetails(): void {
+  element('match-details-overlay').classList.add('hidden')
+  if (detailsReturnToResults) element('result-overlay').classList.remove('hidden')
 }
 
 async function refreshRecords(): Promise<void> {
@@ -704,6 +760,28 @@ function setupControls(): void {
   element('setup-view-records').addEventListener('click', showRecords)
   element('result-records').addEventListener('click', showRecords)
   element('records-back').addEventListener('click', closeRecords)
+  element('match-details-close').addEventListener('click', closeMatchDetails)
+  element('history-list').addEventListener('click', (event) => {
+    if (!(event.target instanceof Element)) return
+    const button = event.target.closest<HTMLButtonElement>('button[data-match-id][data-player]')
+    if (!button) return
+    const match = matches.find((entry) => entry.id === button.dataset.matchId)
+    const player = Number(button.dataset.player)
+    if (match && (player === 0 || player === 1)) showMatchDetails(match, player, false)
+  })
+  document.querySelectorAll<HTMLButtonElement>('[data-result-player]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const match = matches.find((entry) => entry.id === button.dataset.matchId)
+      const player = Number(button.dataset.resultPlayer)
+      if (match && (player === 0 || player === 1)) showMatchDetails(match, player, true)
+    })
+  })
+  element('match-details-overlay').addEventListener('click', (event) => {
+    if (event.target === element('match-details-overlay')) closeMatchDetails()
+  })
+  window.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !element('match-details-overlay').classList.contains('hidden')) closeMatchDetails()
+  })
   element('refresh-records').addEventListener('click', () => void refreshRecords())
   element('export-excel').addEventListener('click', () => void exportExcel())
   element('play-again').addEventListener('click', () => startGame())

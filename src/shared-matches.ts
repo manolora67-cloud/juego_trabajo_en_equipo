@@ -1,12 +1,18 @@
 import { createClient } from '@supabase/supabase-js'
 
 export type MatchWinner = 0 | 1 | null
+export type MatchAnswer = {
+  questionId: number
+  player: 0 | 1
+  selected: 'A' | 'B' | 'C' | 'D'
+}
 
 export type MatchRecord = {
   id: string
   completedAt: string
   players: [{ name: string; score: number }, { name: string; score: number }]
   winner: MatchWinner
+  answers: MatchAnswer[] | null
 }
 
 type MatchRow = {
@@ -17,6 +23,7 @@ type MatchRow = {
   player_two_name: string
   player_two_score: number
   winner_player: 0 | 1 | null
+  answers: MatchAnswer[] | null
 }
 
 type Database = {
@@ -69,6 +76,7 @@ function toRow(match: MatchRecord): MatchRow {
     player_two_name: match.players[1].name,
     player_two_score: match.players[1].score,
     winner_player: match.winner,
+    answers: match.answers,
   }
 }
 
@@ -81,6 +89,7 @@ function fromRow(row: MatchRow): MatchRecord {
       { name: row.player_two_name, score: row.player_two_score },
     ],
     winner: row.winner_player,
+    answers: row.answers ?? null,
   }
 }
 

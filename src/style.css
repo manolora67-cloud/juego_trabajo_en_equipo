@@ -173,6 +173,7 @@ button { touch-action: none; }
 .result-scores span { overflow: hidden; color: #66815d; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
 .result-scores strong { color: #245536; font-family: "Fraunces", Georgia, serif; font-size: 27px; }
 .result-scores > b { color: #8a936d; font-family: "Fraunces", Georgia, serif; font-size: 20px; }
+.result-detail-button { padding: 3px 4px; border: 0; background: transparent; color: #438238; cursor: pointer; font-size: 9px; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
 .save-confirmation { min-height: 14px; margin: 0 0 12px; color: #5e7854; font-size: 9px; }
 .result-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 .result-actions .button { min-height: 37px; font-size: 11px; }
@@ -192,6 +193,20 @@ button { touch-action: none; }
 .correct-answer > strong { color: #294833; font-size: 12px; line-height: 1.4; }
 .correct-answer > p { margin: 0; color: #64755b; font-size: 10px; line-height: 1.45; }
 .feedback-modal > .button { width: 100%; margin-top: 12px; min-height: 41px; justify-content: space-between; }
+.match-details-layer { position: fixed; z-index: 20; }
+.match-details-modal { position: relative; width: min(760px, 100%); max-height: min(88svh, 760px); overflow-y: auto; padding: 26px; border: 1px solid rgba(230, 239, 205, .3); border-radius: 6px; background: #f1ecd8; color: #264331; box-shadow: 0 25px 70px rgba(4, 18, 12, .4); }
+.match-details-close { position: absolute; top: 12px; right: 12px; display: grid; width: 32px; height: 32px; place-items: center; border: 1px solid rgba(45, 80, 48, .2); border-radius: 4px; background: transparent; color: #31543a; cursor: pointer; font-size: 21px; }
+.match-details-modal > .eyebrow { color: #668258; font-size: 8px; }
+.match-details-modal h2 { margin: 7px 38px 7px 0; color: #294733; font-family: "Fraunces", Georgia, serif; font-size: 25px; }
+.match-details-summary { margin: 0 0 14px; color: #64755b; font-size: 12px; line-height: 1.5; }
+.match-details-body { display: grid; gap: 8px; }
+.detail-question { padding: 12px 14px; border: 1px solid rgba(49, 103, 55, .15); background: rgba(255, 255, 255, .36); }
+.detail-question-heading { display: flex; justify-content: space-between; gap: 8px; color: #718267; font-size: 9px; font-weight: 700; }
+.detail-correct { color: #39813c; }
+.detail-reflection { color: #9a6641; }
+.detail-question h3 { margin: 7px 0; color: #294733; font-size: 13px; line-height: 1.4; }
+.detail-question > p { margin: 4px 0; color: #52634f; font-size: 11px; line-height: 1.45; }
+.detail-question .detail-rationale { color: #718066; font-style: italic; }
 
 .records-screen { padding: 0 clamp(16px, 5vw, 72px) 22px; background: #f1ecd8; color: #273f2e; }
 .records-header { display: flex; align-items: center; gap: 13px; min-height: 56px; margin: 0 calc(clamp(16px, 5vw, 72px) * -1); padding: 8px clamp(16px, 5vw, 72px); border-bottom: 1px solid rgba(31, 67, 42, .12); background: #163f2c; color: #f1f0dd; }
@@ -234,8 +249,11 @@ td:first-child strong { color: #344d37; font-weight: 700; }
 .history-row { padding: 10px 0; border-bottom: 1px solid rgba(40, 74, 44, .1); }
 .history-date { margin-bottom: 5px; color: #849078; font-size: 8px; }
 .history-match { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #374e39; font-size: 10px; }
-.history-match span { display: flex; align-items: center; gap: 7px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.history-match span b { color: #28683a; font-size: 13px; }
+.history-player { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2px 7px; min-width: 0; padding: 2px 4px; border: 0; border-radius: 3px; background: transparent; color: #374e39; cursor: pointer; text-align: left; }
+.history-player:hover { background: rgba(55, 112, 55, .1); }
+.history-player-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history-player b { color: #28683a; font-size: 13px; }
+.history-player small { grid-column: 1 / -1; color: #568148; font-size: 8px; font-weight: 700; }
 .history-match i { color: #929977; font-style: normal; }
 .history-winner { margin-top: 4px; color: #568148; font-size: 9px; font-weight: 700; }
 .empty-history { padding: 25px 8px; color: #85907d; font-size: 11px; text-align: center; }
@@ -280,6 +298,8 @@ td:first-child strong { color: #344d37; font-weight: 700; }
   .game-status { min-height: 35px; padding-bottom: max(7px, env(safe-area-inset-bottom)); font-size: 11px; }
   .modal-layer { position: fixed; overflow-y: auto; }
   .result-modal { padding: 22px 18px 17px; }
+  .match-details-modal { padding: 21px 17px; }
+  .detail-question { padding: 10px; }
   .feedback-modal { max-height: 90dvh; padding: 18px; }
   .records-screen { padding-inline: 16px; }
   .records-header { margin-inline: -16px; padding-inline: 16px; }

@@ -5,7 +5,8 @@ create table if not exists public.matches (
   player_one_score smallint not null check (player_one_score between 0 and 10),
   player_two_name text not null check (char_length(btrim(player_two_name)) between 1 and 20),
   player_two_score smallint not null check (player_two_score between 0 and 10),
-  winner_player smallint check (winner_player in (0, 1))
+  winner_player smallint check (winner_player in (0, 1)),
+  answers jsonb
 );
 
 create index if not exists matches_completed_at_idx
