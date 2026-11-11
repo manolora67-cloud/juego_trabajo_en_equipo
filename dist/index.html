@@ -9,8 +9,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet" />
-    <script type="module" crossorigin src="./assets/index-ZNTHLZUx.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-DTEV6w9V.css">
+    <script type="module" crossorigin src="./assets/index-DZeUgiRm.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-Dk3pv1la.css">
   </head>
   <body>
     <div id="app">
@@ -33,7 +33,7 @@
           <section class="setup-form-panel" aria-labelledby="setup-title">
             <div class="panel-kicker">NUEVA PARTIDA <span></span></div>
             <h2 id="setup-title">¿Quiénes juegan?</h2>
-            <p class="panel-copy">Escriban nombres distintos para identificar sus resultados.</p>
+            <p class="panel-copy">Escriban el nombre de cada jugador. Se permiten nombres repetidos.</p>
             <form id="players-form" novalidate>
               <label class="name-field" for="player-one">
                 <span class="field-label"><span class="player-dot p1-dot"></span> JUGADOR 1 <small>VERDE</small></span>
@@ -46,7 +46,7 @@
               <p id="form-error" class="form-error" role="alert"></p>
               <button class="button button-primary start-button" type="submit">Iniciar partida <span aria-hidden="true">→</span></button>
             </form>
-            <div class="local-note"><span aria-hidden="true">◉</span><span>Resultados guardados en este dispositivo.</span></div>
+            <div class="local-note"><span aria-hidden="true">◉</span><span id="storage-note">Resultados guardados en este dispositivo.</span></div>
             <div class="setup-stats"><span><strong id="setup-match-count">0</strong> partidas registradas</span><button id="setup-view-records" type="button">Ver reporte <span aria-hidden="true">↗</span></button></div>
           </section>
         </div>
@@ -59,7 +59,6 @@
           <div class="game-brand"><span class="brand-symbol small-symbol" aria-hidden="true">S</span><span>SENA <b>TEAM CHALLENGE</b></span></div>
           <div class="round-counter"><span>RONDA</span><strong><b id="round-current">01</b><i>/</i>10</strong></div>
           <div class="timer-block"><span>TIEMPO</span><strong id="timer-value">45</strong><small>s</small></div>
-          <button id="game-records" class="icon-button records-icon" type="button" aria-label="Ver reporte" title="Ver reporte">▤</button>
         </header>
         <section class="question-strip" aria-live="polite">
           <div class="question-copy">
@@ -101,7 +100,6 @@
           </aside>
         </section>
         <div id="game-status" class="game-status" role="status" aria-live="polite">Alcanza una puerta y pulsa SELECT para confirmar.</div>
-        <div id="rotate-warning" class="rotate-warning hidden"><span aria-hidden="true">▱</span><strong>Gira tu dispositivo</strong><p>El reto se juega en pantalla horizontal.</p></div>
         <div id="result-overlay" class="modal-layer hidden" role="dialog" aria-modal="true" aria-labelledby="result-title">
           <div class="result-modal"><div class="result-leaf" aria-hidden="true">✳</div><p class="eyebrow">PARTIDA COMPLETADA</p><h2 id="result-title"></h2><p id="result-summary" class="result-summary"></p><div class="result-scores"><div><span id="result-name-one"></span><strong id="result-score-one">0</strong></div><b>:</b><div><span id="result-name-two"></span><strong id="result-score-two">0</strong></div></div><p id="save-confirmation" class="save-confirmation"></p><div class="result-actions"><button id="play-again" class="button button-primary" type="button">Jugar de nuevo <span aria-hidden="true">↻</span></button><button id="result-records" class="button button-outline" type="button">Ver reporte</button><button id="result-home" class="text-button" type="button">Volver al inicio</button></div></div>
         </div>
@@ -111,19 +109,20 @@
       </main>
 
       <main id="records-screen" class="screen records-screen hidden">
-        <header class="records-header"><button id="records-back" class="icon-button" type="button" aria-label="Volver">←</button><div class="game-brand"><span class="brand-symbol small-symbol" aria-hidden="true">S</span><span>SENA <b>REPORTE DE PARTIDAS</b></span></div><span class="records-device-note">DATOS LOCALES</span></header>
-        <section class="report-heading"><div><p class="eyebrow">SEGUIMIENTO DE RESULTADOS</p><h1>Registro de <em>partidas</em></h1><p>Historial y puntajes guardados en este navegador.</p></div><div class="report-actions"><button id="export-csv" class="button button-outline" type="button"><span aria-hidden="true">↓</span> Exportar CSV</button><button id="clear-records" class="button button-danger" type="button">Borrar datos</button></div></section>
+        <header class="records-header"><button id="records-back" class="icon-button" type="button" aria-label="Volver">←</button><div class="game-brand"><span class="brand-symbol small-symbol" aria-hidden="true">S</span><span>SENA <b>REPORTE DE PARTIDAS</b></span></div><span id="records-device-note" class="records-device-note">DATOS LOCALES</span></header>
+        <section class="report-heading"><div><p class="eyebrow">SEGUIMIENTO DE RESULTADOS</p><h1>Registro de <em>partidas</em></h1><p>Resultados de las partidas registradas.</p></div><div class="report-actions"><button id="refresh-records" class="button button-outline" type="button"><span aria-hidden="true">↻</span> Actualizar</button><button id="export-csv" class="button button-outline" type="button"><span aria-hidden="true">↓</span> Exportar CSV</button></div></section>
+        <p id="report-sync-status" class="report-sync-status" role="status" aria-live="polite"></p>
         <section class="stat-grid" aria-label="Resumen">
           <article class="stat-item"><span>PARTIDAS</span><strong id="stat-matches">0</strong><small>completadas</small></article>
-          <article class="stat-item"><span>PERSONAS</span><strong id="stat-people">0</strong><small>jugadores únicos</small></article>
+          <article class="stat-item"><span>NOMBRES</span><strong id="stat-people">0</strong><small>nombres registrados</small></article>
           <article class="stat-item"><span>PARTICIPACIONES</span><strong id="stat-appearances">0</strong><small>puestos en juego</small></article>
           <article class="stat-item stat-highlight"><span>LÍDER EN VICTORIAS</span><strong id="stat-leader">—</strong><small id="stat-leader-wins">sin victorias todavía</small></article>
         </section>
         <section class="report-columns">
-          <div class="report-section"><div class="section-heading"><h2>Tabla de jugadores</h2><span id="ranking-count">0 jugadores</span></div><div class="table-scroll"><table><thead><tr><th>JUGADOR</th><th>PARTIDAS</th><th>VICTORIAS</th><th>PUNTOS</th></tr></thead><tbody id="ranking-body"></tbody></table></div></div>
+          <div class="report-section"><div class="section-heading"><h2>Tabla por nombre</h2><span id="ranking-count">0 jugadores</span></div><p class="ranking-note">Las estadísticas con el mismo nombre se agrupan.</p><div class="table-scroll"><table><thead><tr><th>JUGADOR</th><th>PARTIDAS</th><th>VICTORIAS</th><th>PUNTOS</th></tr></thead><tbody id="ranking-body"></tbody></table></div></div>
           <div class="report-section history-section"><div class="section-heading"><h2>Últimas partidas</h2><span id="history-count">0 registros</span></div><div id="history-list" class="history-list"></div></div>
         </section>
-        <footer class="report-footer"><span>Los datos permanecen en este dispositivo y navegador.</span><span>Descarga el CSV para conservar una copia externa.</span></footer>
+        <footer class="report-footer"><span>Las partidas compartidas son visibles para cualquiera que tenga acceso al reporte.</span><span>Descarga el CSV para conservar una copia externa.</span></footer>
       </main>
     </div>
   </body>

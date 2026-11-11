@@ -36,7 +36,17 @@ type Database = {
   }
 }
 
-const url = import.meta.env.VITE_SUPABASE_URL?.trim()
+function normalizeSupabaseUrl(value: string | undefined): string | undefined {
+  if (!value?.trim()) return undefined
+
+  const parsed = new URL(value.trim())
+  parsed.pathname = parsed.pathname.replace(/\/rest\/v1\/?$/i, '').replace(/\/+$/, '') || '/'
+  parsed.search = ''
+  parsed.hash = ''
+  return parsed.toString().replace(/\/$/, '')
+}
+
+const url = normalizeSupabaseUrl(import.meta.env.VITE_SUPABASE_URL)
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim()
 
 export const sharedMatchesConfigured = Boolean(url && anonKey)
