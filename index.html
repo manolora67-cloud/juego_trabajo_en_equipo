@@ -109,7 +109,17 @@
 
       <main id="records-screen" class="screen records-screen hidden">
         <header class="records-header"><button id="records-back" class="icon-button" type="button" aria-label="Volver">←</button><div class="game-brand"><span class="brand-symbol small-symbol" aria-hidden="true">S</span><span>SENA <b>REPORTE DE PARTIDAS</b></span></div><span id="records-device-note" class="records-device-note">DATOS LOCALES</span></header>
-        <section class="report-heading"><div><p class="eyebrow">SEGUIMIENTO DE RESULTADOS</p><h1>Registro de <em>partidas</em></h1><p>Resultados de las partidas registradas.</p></div><div class="report-actions"><button id="refresh-records" class="button button-outline" type="button"><span aria-hidden="true">↻</span> Actualizar</button><button id="export-csv" class="button button-outline" type="button"><span aria-hidden="true">↓</span> Exportar CSV</button></div></section>
+        <section class="report-heading">
+          <div>
+            <p class="eyebrow">SEGUIMIENTO DE RESULTADOS</p>
+            <h1>Registro de <em>partidas</em></h1>
+            <p>Resultados de las partidas registradas.</p>
+          </div>
+          <div class="report-actions">
+            <button id="refresh-records" class="button button-outline" type="button"><span aria-hidden="true">↻</span> Actualizar</button>
+            <button id="export-excel" class="button button-outline" type="button"><span aria-hidden="true">↓</span> Descargar Excel</button>
+          </div>
+        </section>
         <p id="report-sync-status" class="report-sync-status" role="status" aria-live="polite"></p>
         <section class="stat-grid" aria-label="Resumen">
           <article class="stat-item"><span>PARTIDAS</span><strong id="stat-matches">0</strong><small>completadas</small></article>

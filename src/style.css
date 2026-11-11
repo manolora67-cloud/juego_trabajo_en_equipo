@@ -115,16 +115,16 @@ button { touch-action: none; }
 .timer-block strong { margin-top: 9px; color: #f3edc9; font-variant-numeric: tabular-nums; font-size: 17px; line-height: 1; }
 .timer-block small { margin-top: 8px; color: #aabd95; font-size: 9px; }
 .timer-low { color: #ff9a76 !important; }
-.question-strip { display: flex; align-items: center; gap: clamp(15px, 3vw, 42px); min-height: 99px; padding: 10px clamp(14px, 3vw, 40px); background: #f0ead4; color: #243f2e; }
+.question-strip { display: flex; align-items: center; gap: clamp(15px, 3vw, 42px); min-height: 118px; padding: 12px clamp(14px, 3vw, 40px); background: #f0ead4; color: #243f2e; }
 .question-copy { flex: 1; min-width: 0; }
-.question-meta { display: flex; align-items: center; gap: 11px; margin-bottom: 4px; color: #607658; font-size: 8px; letter-spacing: .8px; font-weight: 800; }
+.question-meta { display: flex; align-items: center; gap: 11px; margin-bottom: 6px; color: #607658; font-size: 9px; letter-spacing: .8px; font-weight: 800; }
 .question-meta > span:first-child { padding: 3px 6px; border-radius: 2px; background: #d7e6c1; color: #31653a; }
 .question-number { color: #8a7352; }
 .question-number b { color: #305b35; }
-.question-copy h1 { max-width: 900px; margin: 0 0 7px; color: #243b2c; font-family: "Fraunces", Georgia, serif; font-size: 16px; line-height: 1.22; font-weight: 600; }
-.answer-options { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px 12px; }
-.answer-option { display: flex; align-items: baseline; gap: 5px; min-width: 0; color: #46594a; font-size: 9px; line-height: 1.25; }
-.answer-option b { flex: 0 0 auto; color: #2a7540; font-size: 9px; }
+.question-copy h1 { max-width: 1100px; margin: 0 0 8px; color: #243b2c; font-family: "Fraunces", Georgia, serif; font-size: clamp(18px, 1.45vw, 22px); line-height: 1.25; font-weight: 600; }
+.answer-options { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px 14px; }
+.answer-option { display: flex; align-items: baseline; gap: 6px; min-width: 0; color: #46594a; font-size: clamp(12px, .95vw, 15px); line-height: 1.35; }
+.answer-option b { flex: 0 0 auto; color: #2a7540; font-size: inherit; }
 .scoreboard { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; min-width: 132px; padding: 8px 11px; border-left: 1px solid rgba(53, 78, 51, .16); }
 .score-player { display: grid; gap: 2px; min-width: 42px; text-align: center; }
 .score-name { max-width: 66px; overflow: hidden; color: #577151; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; font-weight: 800; }
@@ -135,7 +135,7 @@ button { touch-action: none; }
 .timer-track { height: 3px; background: rgba(7, 26, 17, .26); }
 .timer-track span { display: block; width: 100%; height: 100%; background: #c9d977; transition: width 1s linear, background .2s ease; }
 .timer-track span.timer-bar-low { background: #f18967; }
-.play-zone { display: grid; grid-template-columns: clamp(76px, 10vw, 122px) minmax(0, 1fr) clamp(76px, 10vw, 122px); align-items: stretch; gap: clamp(7px, 1.7vw, 22px); min-height: 0; padding: 10px clamp(8px, 2vw, 26px) 4px; }
+.play-zone { display: grid; grid-template-columns: clamp(76px, 10vw, 122px) minmax(0, 1fr) clamp(76px, 10vw, 122px); align-items: stretch; gap: clamp(7px, 1.7vw, 22px); min-height: clamp(210px, 34svh, 420px); padding: 10px clamp(8px, 2vw, 26px) 4px; }
 .controller { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(7px, 1.5vh, 13px); min-width: 0; }
 .controller-title { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; overflow: hidden; color: #e4ecd7; font-size: 9px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
 .controller-title .player-dot { width: 7px; height: 7px; }
@@ -260,14 +260,14 @@ td:first-child strong { color: #344d37; font-weight: 700; }
   .question-strip { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 7px 12px; min-height: 0; padding: 10px 12px; }
   .question-copy { grid-column: 1 / -1; grid-row: 2; }
   .question-meta { margin-bottom: 5px; font-size: 8px; }
-  .question-copy h1 { margin-bottom: 8px; font-size: clamp(15px, 4vw, 19px); line-height: 1.25; }
+  .question-copy h1 { margin-bottom: 9px; font-size: clamp(19px, 5vw, 23px); line-height: 1.25; }
   .answer-options { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px 10px; }
-  .answer-option { align-items: flex-start; gap: 5px; font-size: clamp(10px, 2.7vw, 12px); line-height: 1.3; }
+  .answer-option { align-items: flex-start; gap: 6px; font-size: clamp(14px, 3.8vw, 16px); line-height: 1.35; }
   .scoreboard { grid-column: 1 / -1; grid-row: 1; justify-self: end; min-width: 0; gap: 8px; padding: 0; border: 0; }
   .score-player { min-width: 36px; }
   .score-name { max-width: 74px; font-size: 9px; }
   .score-player strong { font-size: 20px; }
-  .play-zone { grid-template-areas: "maze maze" "player-one player-two"; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: minmax(145px, 1fr) auto; align-items: stretch; gap: 8px; padding: 8px 10px; }
+  .play-zone { grid-template-areas: "maze maze" "player-one player-two"; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: minmax(clamp(190px, 27svh, 260px), 1fr) auto; align-items: stretch; gap: 8px; padding: 8px 10px; }
   .maze-frame { grid-area: maze; }
   .controller { gap: 6px; min-height: 0; padding: 8px 5px; border: 1px solid rgba(220, 235, 204, .15); border-radius: 6px; background: rgba(9, 43, 29, .3); }
   .controller-one { grid-area: player-one; }
@@ -303,15 +303,16 @@ td:first-child strong { color: #344d37; font-weight: 700; }
   .game-screen { height: auto; min-height: 100svh; overflow-y: auto; grid-template-rows: auto auto 3px minmax(310px, 1fr) auto; padding-bottom: env(safe-area-inset-bottom); }
   .game-header { padding-inline: max(10px, env(safe-area-inset-left)); }
   .question-strip { padding-inline: 14px; }
-  .play-zone { grid-template-rows: minmax(145px, 1fr) auto; }
+  .play-zone { grid-template-rows: minmax(clamp(190px, 27svh, 260px), 1fr) auto; }
   .controller { min-height: 174px; }
 }
 
 @media (max-width: 760px) and (orientation: landscape), (pointer: coarse) and (orientation: landscape) and (max-height: 800px) {
   .game-screen { height: 100svh; min-height: 300px; }
   .game-header { min-height: 46px; }
-  .question-strip { min-height: 88px; padding-block: 7px; }
-  .question-copy h1 { margin-bottom: 5px; }
+  .question-strip { min-height: 108px; padding-block: 8px; }
+  .question-copy h1 { margin-bottom: 6px; font-size: clamp(17px, 2.8vw, 21px); }
+  .answer-option { font-size: clamp(12px, 1.5vw, 15px); }
   .answer-options { gap: 4px 10px; }
   .play-zone { grid-template-areas: none; grid-template-columns: clamp(78px, 13vw, 120px) minmax(0, 1fr) clamp(78px, 13vw, 120px); grid-template-rows: minmax(0, 1fr); gap: 7px; padding: 7px; }
   .maze-frame { grid-area: auto; }
@@ -338,8 +339,8 @@ td:first-child strong { color: #344d37; font-weight: 700; }
 @media (pointer: coarse) and (orientation: landscape) and (max-height: 650px) {
   .game-header { min-height: 48px; }
   .question-strip { min-height: 92px; }
-  .question-copy h1 { font-size: clamp(16px, 2.1vw, 22px); }
-  .answer-option { font-size: clamp(11px, 1.1vw, 14px); }
+  .question-copy h1 { font-size: clamp(17px, 2.8vw, 22px); }
+  .answer-option { font-size: clamp(12px, 1.5vw, 15px); }
   .play-zone { grid-template-columns: clamp(90px, 13vw, 140px) minmax(0, 1fr) clamp(90px, 13vw, 140px); }
   .dpad { grid-template-columns: repeat(3, clamp(38px, 7vh, 46px)); grid-template-rows: repeat(3, clamp(38px, 7vh, 46px)); gap: 3px; }
   .select-button { min-height: 42px; }
@@ -371,8 +372,8 @@ td:first-child strong { color: #344d37; font-weight: 700; }
   .setup-footer { padding-top: 6px; }
   .game-header { min-height: 42px; }
   .question-strip { min-height: 86px; padding-block: 6px; }
-  .question-copy h1 { margin-bottom: 4px; font-size: 14px; }
-  .answer-option { font-size: 8px; }
+  .question-copy h1 { margin-bottom: 5px; font-size: 16px; }
+  .answer-option { font-size: 11px; }
   .play-zone { padding-top: 5px; }
   .controller { gap: 5px; }
   .dpad { grid-template-columns: repeat(3, 27px); grid-template-rows: repeat(3, 27px); }

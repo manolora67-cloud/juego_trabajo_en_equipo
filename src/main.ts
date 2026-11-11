@@ -495,39 +495,140 @@ function refreshSetupStats(): void {
   element('setup-match-count').textContent = String(matches.length)
 }
 
-function csvCell(value: string | number): string {
-  let text = String(value)
-  if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`
-  return `"${text.replace(/"/g, '""')}"`
-}
-
-function exportCsv(): void {
+async function exportExcel(): Promise<void> {
   if (!matches.length) {
     window.alert('Todavía no hay partidas para exportar.')
     return
   }
-  const rows = [
-    ['Fecha', 'Jugador 1', 'Puntaje 1', 'Jugador 2', 'Puntaje 2', 'Ganador'],
-    ...matches.map((match) => [
-      new Date(match.completedAt).toLocaleString('es-CO'),
-      match.players[0].name,
-      match.players[0].score,
-      match.players[1].name,
-      match.players[1].score,
-      match.winner !== null ? match.players[match.winner].name : 'Empate',
-    ]),
-  ]
-  const csv = `\uFEFF${rows.map((row) => row.map(csvCell).join(';')).join('\r\n')}`
-  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
-  const link = document.createElement('a')
-  link.href = url
-  link.download = `sena-team-challenge-${new Date().toISOString().slice(0, 10)}.csv`
-  document.body.append(link)
-  link.click()
-  window.setTimeout(() => {
-    URL.revokeObjectURL(url)
-    link.remove()
-  }, 1000)
+  const button = element<HTMLButtonElement>('export-excel')
+  button.disabled = true
+  try {
+    const ExcelJS = await import('exceljs')
+    const workbook = new ExcelJS.Workbook()
+    workbook.creator = 'SENA Team Challenge'
+    workbook.created = new Date()
+
+    const matchesSheet = workbook.addWorksheet('Partidas', {
+      views: [{ state: 'frozen', ySplit: 3 }],
+      pageSetup: { orientation: 'landscape', fitToPage: true, fitToWidth: 1 },
+    })
+    matchesSheet.columns = [
+      { header: 'Fecha', key: 'date', width: 23 },
+      { header: 'Jugador 1', key: 'playerOne', width: 25 },
+      { header: 'Puntos 1', key: 'scoreOne', width: 13 },
+      { header: 'Jugador 2', key: 'playerTwo', width: 25 },
+      { header: 'Puntos 2', key: 'scoreTwo', width: 13 },
+      { header: 'Resultado', key: 'result', width: 28 },
+    ]
+    matchesSheet.mergeCells('A1:F1')
+    matchesSheet.getCell('A1').value = 'SENA TEAM CHALLENGE'
+    matchesSheet.getCell('A1').font = { name: 'Aptos Display', size: 18, bold: true, color: { argb: 'FFFFFFFF' } }
+    matchesSheet.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF143D2B' } }
+    matchesSheet.getCell('A1').alignment = { vertical: 'middle' }
+    matchesSheet.getRow(1).height = 34
+    matchesSheet.mergeCells('A2:F2')
+    matchesSheet.getCell('A2').value = `Reporte de partidas · ${matches.length} registros · Generado ${new Date().toLocaleString('es-CO')}`
+    matchesSheet.getCell('A2').font = { name: 'Aptos', size: 10, italic: true, color: { argb: 'FF536B57' } }
+    matchesSheet.getRow(2).height = 22
+    const headerRow = matchesSheet.getRow(3)
+    headerRow.values = ['Fecha', 'Jugador 1', 'Puntos 1', 'Jugador 2', 'Puntos 2', 'Resultado']
+    headerRow.height = 24
+    headerRow.eachCell((cell) => {
+      cell.font = { name: 'Aptos', size: 10, bold: true, color: { argb: 'FFFFFFFF' } }
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF326B45' } }
+      cell.alignment = { vertical: 'middle', horizontal: 'center' }
+    })
+    for (const [index, match] of matches.entries()) {
+      const row = matchesSheet.addRow([
+        new Date(match.completedAt),
+        match.players[0].name,
+        match.players[0].score,
+        match.players[1].name,
+        match.players[1].score,
+        match.winner !== null ? `Ganó ${match.players[match.winner].name}` : 'Empate',
+      ])
+      row.height = 22
+      row.getCell(1).numFmt = 'dd/mm/yyyy hh:mm'
+      row.getCell(1).alignment = { horizontal: 'center' }
+      row.getCell(3).alignment = { horizontal: 'center' }
+      row.getCell(5).alignment = { horizontal: 'center' }
+      row.getCell(6).font = { name: 'Aptos', size: 10, bold: true, color: { argb: 'FF326B45' } }
+      row.eachCell((cell) => {
+        cell.border = { bottom: { style: 'hair', color: { argb: 'FFDCE5D4' } } }
+        if (index % 2 === 1) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3F6ED' } }
+      })
+    }
+    matchesSheet.autoFilter = { from: 'A3', to: 'F3' }
+
+    const byPlayer = new Map<string, { name: string; games: number; wins: number; points: number }>()
+    for (const match of matches) {
+      match.players.forEach((player, playerIndex) => {
+        const key = normalizeName(player.name)
+        const total = byPlayer.get(key) ?? { name: player.name, games: 0, wins: 0, points: 0 }
+        total.games += 1
+        total.points += player.score
+        if (match.winner === playerIndex) total.wins += 1
+        byPlayer.set(key, total)
+      })
+    }
+    const ranking = [...byPlayer.values()].sort((a, b) => b.wins - a.wins || b.points - a.points || a.name.localeCompare(b.name, 'es'))
+    const summarySheet = workbook.addWorksheet('Jugadores', {
+      views: [{ state: 'frozen', ySplit: 3 }],
+    })
+    summarySheet.columns = [
+      { header: 'Posición', key: 'position', width: 15 },
+      { header: 'Jugador', key: 'name', width: 30 },
+      { header: 'Partidas', key: 'games', width: 15 },
+      { header: 'Victorias', key: 'wins', width: 15 },
+      { header: 'Puntos', key: 'points', width: 15 },
+    ]
+    summarySheet.mergeCells('A1:E1')
+    summarySheet.getCell('A1').value = 'RESUMEN DE JUGADORES'
+    summarySheet.getCell('A1').font = { name: 'Aptos Display', size: 18, bold: true, color: { argb: 'FFFFFFFF' } }
+    summarySheet.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF143D2B' } }
+    summarySheet.getCell('A1').alignment = { vertical: 'middle' }
+    summarySheet.getRow(1).height = 34
+    summarySheet.mergeCells('A2:E2')
+    summarySheet.getCell('A2').value = `${ranking.length} nombres · ${matches.length} partidas`
+    summarySheet.getCell('A2').font = { name: 'Aptos', size: 10, italic: true, color: { argb: 'FF536B57' } }
+    summarySheet.getRow(2).height = 22
+    const rankingHeader = summarySheet.getRow(3)
+    rankingHeader.values = ['Posición', 'Jugador', 'Partidas', 'Victorias', 'Puntos']
+    rankingHeader.height = 24
+    rankingHeader.eachCell((cell) => {
+      cell.font = { name: 'Aptos', size: 10, bold: true, color: { argb: 'FFFFFFFF' } }
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF326B45' } }
+      cell.alignment = { vertical: 'middle', horizontal: 'center' }
+    })
+    ranking.forEach((player, index) => {
+      const row = summarySheet.addRow([index + 1, player.name, player.games, player.wins, player.points])
+      row.height = 22
+      row.eachCell((cell) => {
+        cell.border = { bottom: { style: 'hair', color: { argb: 'FFDCE5D4' } } }
+        if (index % 2 === 1) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3F6ED' } }
+      })
+      row.getCell(1).alignment = { horizontal: 'center' }
+      row.getCell(4).font = { name: 'Aptos', size: 10, bold: true, color: { argb: 'FF326B45' } }
+    })
+    summarySheet.autoFilter = { from: 'A3', to: 'E3' }
+
+    const buffer = await workbook.xlsx.writeBuffer()
+    const url = URL.createObjectURL(new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `sena-team-challenge-${new Date().toISOString().slice(0, 10)}.xlsx`
+    document.body.append(link)
+    link.click()
+    window.setTimeout(() => {
+      URL.revokeObjectURL(url)
+      link.remove()
+    }, 1000)
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : 'Error desconocido.'
+    window.alert(`No se pudo crear el archivo Excel. ${detail}`)
+  } finally {
+    button.disabled = false
+  }
 }
 
 function setupControls(): void {
@@ -604,7 +705,7 @@ function setupControls(): void {
   element('result-records').addEventListener('click', showRecords)
   element('records-back').addEventListener('click', closeRecords)
   element('refresh-records').addEventListener('click', () => void refreshRecords())
-  element('export-csv').addEventListener('click', exportCsv)
+  element('export-excel').addEventListener('click', () => void exportExcel())
   element('play-again').addEventListener('click', () => startGame())
   element('continue-round').addEventListener('click', advanceQuestion)
   element('result-home').addEventListener('click', () => {
