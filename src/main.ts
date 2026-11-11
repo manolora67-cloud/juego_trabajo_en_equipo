@@ -1,4 +1,10 @@
 import Phaser from 'phaser'
+import {
+  fetchSharedMatches,
+  sharedMatchesConfigured,
+  uploadMatches,
+} from './shared-matches'
+import type { MatchRecord, MatchWinner } from './shared-matches'
 
 type PlayerId = 0 | 1
 type Direction = 'up' | 'down' | 'left' | 'right'
@@ -12,13 +18,6 @@ type Question = {
   question: string
   options: Record<OptionKey, string>
   correct: OptionKey
-}
-
-type MatchRecord = {
-  id: string
-  completedAt: string
-  players: [{ name: string; score: number }, { name: string; score: number }]
-  winner: string | null
 }
 
 type PlayerPosition = { x: number; y: number; score: number; frozenUntil: number }
@@ -73,7 +72,8 @@ const positions: [PlayerPosition, PlayerPosition] = [
   { x: 16, y: 4, score: 0, frozenUntil: 0 },
 ]
 
-let matches = loadMatches()
+let localMatches = loadMatches()
+let matches = [...localMatches]
 let gameState: GameState = 'setup'
 let currentScreen: ScreenName = 'setup'
 let recordsReturnScreen: ScreenName = 'setup'
@@ -86,6 +86,7 @@ let timeExpired = false
 let game: Phaser.Game | undefined
 let mazeScene: MazeScene | undefined
 let lastSaveSucceeded = true
+let refreshInProgress = false
 
 function element<T extends HTMLElement>(id: string): T {
   const found = document.getElementById(id)
@@ -105,24 +106,54 @@ function loadMatches(): MatchRecord[] {
   try {
     const saved: unknown = JSON.parse(localStorage.getItem(storageKey) ?? '[]')
     if (!Array.isArray(saved)) return []
-    return saved.filter((match): match is MatchRecord =>
-      Boolean(match && typeof match.id === 'string' && typeof match.completedAt === 'string' &&
-        Array.isArray(match.players) && match.players.length === 2 &&
-        match.players.every((player: unknown) => Boolean(player && typeof player === 'object' && 'name' in player && typeof player.name === 'string' && 'score' in player && typeof player.score === 'number')) &&
-        (match.winner === null || typeof match.winner === 'string')),
-    )
+    return saved.flatMap((entry: unknown): MatchRecord[] => {
+      if (!entry || typeof entry !== 'object') return []
+      const match = entry as Record<string, unknown>
+      if (typeof match.id !== 'string' || typeof match.completedAt !== 'string' ||
+        !Array.isArray(match.players) || match.players.length !== 2) return []
+      const [first, second] = match.players
+      if (!first || typeof first !== 'object' || !second || typeof second !== 'object') return []
+      const playerOne = first as Record<string, unknown>
+      const playerTwo = second as Record<string, unknown>
+      if (typeof playerOne.name !== 'string' || typeof playerOne.score !== 'number' ||
+        typeof playerTwo.name !== 'string' || typeof playerTwo.score !== 'number') return []
+      const winner: MatchWinner = match.winner === null
+        ? null
+        : match.winner === 0 || match.winner === 1
+          ? match.winner
+          : typeof match.winner === 'string'
+            ? match.winner === playerOne.name ? 0 : match.winner === playerTwo.name ? 1 : null
+            : null
+      return [{
+        id: match.id,
+        completedAt: match.completedAt,
+        players: [
+          { name: playerOne.name, score: playerOne.score },
+          { name: playerTwo.name, score: playerTwo.score },
+        ],
+        winner,
+      }]
+    })
   } catch {
     return []
   }
 }
 
-function saveMatches(): boolean {
+function saveLocalMatches(): boolean {
   try {
-    localStorage.setItem(storageKey, JSON.stringify(matches))
+    localStorage.setItem(storageKey, JSON.stringify(localMatches))
     return true
   } catch {
     return false
   }
+}
+
+function mergeMatches(...collections: MatchRecord[][]): MatchRecord[] {
+  const byId = new Map<string, MatchRecord>()
+  for (const collection of collections) {
+    for (const match of collection) byId.set(match.id, match)
+  }
+  return [...byId.values()].sort((a, b) => a.completedAt.localeCompare(b.completedAt))
 }
 
 function setScreen(screen: ScreenName): void {
@@ -351,32 +382,45 @@ function finishGame(): void {
   element('feedback-overlay').classList.add('hidden')
   const first = positions[0].score
   const second = positions[1].score
-  const winner = first === second ? null : first > second ? playerNames[0] : playerNames[1]
+  const winner: MatchWinner = first === second ? null : first > second ? 0 : 1
   const record: MatchRecord = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     completedAt: new Date().toISOString(),
     players: [{ name: playerNames[0], score: first }, { name: playerNames[1], score: second }],
     winner,
   }
-  matches.push(record)
-  lastSaveSucceeded = saveMatches()
-  element('result-title').textContent = winner ? `¡Ganó ${winner}!` : '¡Un empate en equipo!'
-  element('result-summary').textContent = winner ? 'La constancia abrió la puerta correcta.' : 'Terminaron con el mismo puntaje.'
+  localMatches.push(record)
+  matches = mergeMatches(matches, [record])
+  lastSaveSucceeded = saveLocalMatches()
+  element('result-title').textContent = winner !== null ? `¡Ganó ${playerNames[winner]}!` : '¡Un empate en equipo!'
+  element('result-summary').textContent = winner !== null ? 'La constancia abrió la puerta correcta.' : 'Terminaron con el mismo puntaje.'
   element('result-name-one').textContent = playerNames[0]
   element('result-name-two').textContent = playerNames[1]
   element('result-score-one').textContent = String(first)
   element('result-score-two').textContent = String(second)
   element('save-confirmation').textContent = lastSaveSucceeded
-    ? 'Partida guardada en este dispositivo.'
-    : 'No se pudo guardar. Exporta el reporte o revisa el espacio disponible.'
+    ? sharedMatchesConfigured ? 'Guardada en este dispositivo. Sincronizando con el reporte público…' : 'Partida guardada en este dispositivo.'
+    : 'No se pudo guardar en este dispositivo. Revisa el espacio disponible.'
   element('result-overlay').classList.remove('hidden')
   refreshSetupStats()
+  if (sharedMatchesConfigured) void publishMatch(record)
+}
+
+async function publishMatch(record: MatchRecord): Promise<void> {
+  try {
+    await uploadMatches([record])
+    element('save-confirmation').textContent = 'Partida guardada y visible en el reporte público.'
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : 'Error desconocido.'
+    element('save-confirmation').textContent = `Guardada solo en este dispositivo; no se pudo compartir. ${detail}`
+  }
 }
 
 function showRecords(): void {
   recordsReturnScreen = currentScreen
   renderRecords()
   setScreen('records')
+  void refreshRecords()
 }
 
 function closeRecords(): void {
@@ -386,14 +430,14 @@ function closeRecords(): void {
 function renderRecords(): void {
   const byPlayer = new Map<string, { name: string; games: number; wins: number; points: number }>()
   for (const match of matches) {
-    for (const player of match.players) {
+    match.players.forEach((player, playerIndex) => {
       const key = normalizeName(player.name)
       const total = byPlayer.get(key) ?? { name: player.name, games: 0, wins: 0, points: 0 }
       total.games += 1
       total.points += player.score
-      if (match.winner && normalizeName(match.winner) === key) total.wins += 1
+      if (match.winner === playerIndex) total.wins += 1
       byPlayer.set(key, total)
-    }
+    })
   }
   const ranking = [...byPlayer.values()].sort((a, b) => b.wins - a.wins || b.points - a.points || a.name.localeCompare(b.name, 'es'))
   const appearances = matches.reduce((sum, match) => sum + match.players.length, 0)
@@ -402,7 +446,7 @@ function renderRecords(): void {
   element('stat-appearances').textContent = String(appearances)
   element('stat-leader').textContent = ranking[0]?.name ?? '—'
   element('stat-leader-wins').textContent = ranking.length ? `${ranking[0].wins} victorias` : 'sin victorias todavía'
-  element('ranking-count').textContent = `${ranking.length} ${ranking.length === 1 ? 'jugador' : 'jugadores'}`
+  element('ranking-count').textContent = `${ranking.length} ${ranking.length === 1 ? 'nombre' : 'nombres'}`
   element('ranking-body').innerHTML = ranking.length
     ? ranking.map((player, index) => `<tr><td><span class="rank-number">${String(index + 1).padStart(2, '0')}</span><strong>${escapeHtml(player.name)}</strong></td><td>${player.games}</td><td><b class="wins-value">${player.wins}</b></td><td>${player.points}</td></tr>`).join('')
     : '<tr><td class="empty-table" colspan="4">Las partidas completadas aparecerán aquí.</td></tr>'
@@ -410,10 +454,41 @@ function renderRecords(): void {
   element('history-count').textContent = `${matches.length} ${matches.length === 1 ? 'registro' : 'registros'}`
   element('history-list').innerHTML = history.length
     ? history.map((match) => {
-      const winnerLabel = match.winner ? `Ganó ${escapeHtml(match.winner)}` : 'Empate'
+      const winnerLabel = match.winner !== null ? `Ganó ${escapeHtml(match.players[match.winner].name)}` : 'Empate'
       return `<article class="history-row"><div class="history-date">${new Date(match.completedAt).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })}</div><div class="history-match"><span>${escapeHtml(match.players[0].name)} <b>${match.players[0].score}</b></span><i>:</i><span>${escapeHtml(match.players[1].name)} <b>${match.players[1].score}</b></span></div><div class="history-winner">${winnerLabel}</div></article>`
     }).join('')
     : '<div class="empty-history">Aún no hay partidas completadas.</div>'
+}
+
+async function refreshRecords(): Promise<void> {
+  const status = element('report-sync-status')
+  const refreshButton = element<HTMLButtonElement>('refresh-records')
+  if (!sharedMatchesConfigured) {
+    status.textContent = 'Reporte local: configura Supabase para compartir las partidas entre dispositivos.'
+    element('records-device-note').textContent = 'SOLO LOCAL'
+    return
+  }
+  if (refreshInProgress) return
+  refreshInProgress = true
+  refreshButton.disabled = true
+  refreshButton.textContent = 'Actualizando…'
+  status.textContent = 'Sincronizando partidas…'
+  try {
+    await uploadMatches(localMatches)
+    const shared = await fetchSharedMatches()
+    matches = mergeMatches(shared, localMatches)
+    renderRecords()
+    refreshSetupStats()
+    element('records-device-note').textContent = 'REPORTE PÚBLICO'
+    status.textContent = `Actualizado: ${new Date().toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })}.`
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : 'Error desconocido.'
+    status.textContent = `No se pudo actualizar el reporte. ${detail}`
+  } finally {
+    refreshInProgress = false
+    refreshButton.disabled = false
+    refreshButton.innerHTML = '<span aria-hidden="true">↻</span> Actualizar'
+  }
 }
 
 function refreshSetupStats(): void {
@@ -439,7 +514,7 @@ function exportCsv(): void {
       match.players[0].score,
       match.players[1].name,
       match.players[1].score,
-      match.winner ?? 'Empate',
+      match.winner !== null ? match.players[match.winner].name : 'Empate',
     ]),
   ]
   const csv = `\uFEFF${rows.map((row) => row.map(csvCell).join(';')).join('\r\n')}`
@@ -456,6 +531,9 @@ function exportCsv(): void {
 }
 
 function setupControls(): void {
+  element('storage-note').textContent = sharedMatchesConfigured
+    ? 'Las partidas se comparten en el reporte público.'
+    : 'Resultados guardados en este dispositivo.'
   const form = element<HTMLFormElement>('players-form')
   form.addEventListener('submit', (event) => {
     event.preventDefault()
@@ -464,11 +542,6 @@ function setupControls(): void {
     const error = element('form-error')
     if (!first || !second) {
       error.textContent = 'Escriban el nombre de ambos jugadores.'
-      return
-    }
-    if (normalizeName(first) === normalizeName(second)) {
-      error.textContent = 'Cada jugador necesita un nombre diferente.'
-      element<HTMLInputElement>('player-two').focus()
       return
     }
     error.textContent = ''
@@ -530,14 +603,8 @@ function setupControls(): void {
   element('setup-view-records').addEventListener('click', showRecords)
   element('result-records').addEventListener('click', showRecords)
   element('records-back').addEventListener('click', closeRecords)
+  element('refresh-records').addEventListener('click', () => void refreshRecords())
   element('export-csv').addEventListener('click', exportCsv)
-  element('clear-records').addEventListener('click', () => {
-    if (!matches.length || !window.confirm('¿Borrar todo el historial guardado en este dispositivo? Esta acción no se puede deshacer.')) return
-    matches = []
-    lastSaveSucceeded = saveMatches()
-    refreshSetupStats()
-    renderRecords()
-  })
   element('play-again').addEventListener('click', () => startGame())
   element('continue-round').addEventListener('click', advanceQuestion)
   element('result-home').addEventListener('click', () => {

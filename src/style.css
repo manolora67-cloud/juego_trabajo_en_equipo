@@ -206,6 +206,8 @@ button { touch-action: none; }
 .report-actions { display: flex; gap: 8px; }
 .report-actions .button { min-height: 38px; border-color: rgba(41, 79, 45, .2); color: #34543a; font-size: 10px; }
 .report-actions .button-danger { border-color: rgba(160, 92, 63, .25); color: #96533c; }
+.report-sync-status { min-height: 16px; max-width: 1180px; margin: -10px auto 12px; color: #687a60; font-size: 10px; }
+.report-actions .button:disabled { cursor: wait; opacity: .65; }
 .stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); max-width: 1180px; margin: 0 auto 22px; border: 1px solid rgba(39, 70, 42, .16); background: rgba(255, 255, 255, .26); }
 .stat-item { display: flex; flex-direction: column; min-height: 97px; padding: 14px 17px; border-right: 1px solid rgba(39, 70, 42, .13); }
 .stat-item:last-child { border-right: 0; }
@@ -218,6 +220,7 @@ button { touch-action: none; }
 .section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 0 0 9px; border-bottom: 1px solid rgba(42, 75, 43, .22); }
 .section-heading h2 { margin: 0; color: #2a4733; font-family: "Fraunces", Georgia, serif; font-size: 17px; font-weight: 600; }
 .section-heading > span { color: #7a866f; font-size: 9px; }
+.ranking-note { margin: 8px 0 0; color: #7a866f; font-size: 9px; }
 .table-scroll { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; text-align: left; }
 th { padding: 10px 8px; color: #7b876f; font-size: 8px; letter-spacing: .7px; font-weight: 800; }
