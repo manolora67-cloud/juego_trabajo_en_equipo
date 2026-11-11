@@ -29,6 +29,6 @@ El juego puede publicar las partidas completadas en Supabase para que el reporte
 
 La clave pública se incluye en el frontend; nunca uses la clave `service_role`. La tabla permite lecturas e inserciones públicas para cumplir con el reporte compartido. No hay autenticación, por lo que cualquier visitante puede enviar resultados y los datos no deben considerarse verificados.
 
-Las partidas antiguas guardadas localmente se importan al reporte cuando se abre o actualiza desde ese navegador. Cada dispositivo que tenga historial previo debe conectarse una vez para importar sus partidas. El botón **Actualizar** vuelve a consultar el reporte público; los nombres repetidos están permitidos y las estadísticas de la tabla se agrupan por nombre. **Descargar Excel** genera un libro `.xlsx` con hojas de partidas y resumen por jugador.
+Las partidas nuevas se guardan localmente y se publican en Supabase al terminar cada partida. El reporte compartido solo muestra los datos que logra leer de Supabase; **Actualizar** vuelve a consultarlos y nunca vuelve a subir el historial local, para evitar que partidas borradas reaparezcan. El historial local anterior no se importa automáticamente. Los nombres repetidos están permitidos y las estadísticas de la tabla se agrupan por nombre. **Descargar Excel** genera un libro `.xlsx` con hojas de partidas y resumen por jugador.
 
 Si no configuras Supabase, el juego sigue funcionando con almacenamiento local y el reporte solo estará disponible en ese navegador. El CSV permite conservar una copia externa.

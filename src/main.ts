@@ -418,6 +418,7 @@ async function publishMatch(record: MatchRecord): Promise<void> {
 
 function showRecords(): void {
   recordsReturnScreen = currentScreen
+  if (sharedMatchesConfigured) matches = []
   renderRecords()
   setScreen('records')
   void refreshRecords()
@@ -472,11 +473,10 @@ async function refreshRecords(): Promise<void> {
   refreshInProgress = true
   refreshButton.disabled = true
   refreshButton.textContent = 'Actualizando…'
-  status.textContent = 'Sincronizando partidas…'
+  status.textContent = 'Consultando el reporte público…'
   try {
-    await uploadMatches(localMatches)
     const shared = await fetchSharedMatches()
-    matches = mergeMatches(shared, localMatches)
+    matches = shared
     renderRecords()
     refreshSetupStats()
     element('records-device-note').textContent = 'REPORTE PÚBLICO'
