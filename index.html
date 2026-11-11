@@ -33,15 +33,15 @@
           <section class="setup-form-panel" aria-labelledby="setup-title">
             <div class="panel-kicker">NUEVA PARTIDA <span></span></div>
             <h2 id="setup-title">¿Quiénes juegan?</h2>
-            <p class="panel-copy">Escriban el nombre de cada jugador. Se permiten nombres repetidos.</p>
+            <p class="panel-copy">Escriban el nombre de cada jugador, sin números. Se permiten nombres repetidos.</p>
             <form id="players-form" novalidate>
               <label class="name-field" for="player-one">
                 <span class="field-label"><span class="player-dot p1-dot"></span> JUGADOR 1 <small>VERDE</small></span>
-                <input id="player-one" name="playerOne" maxlength="20" autocomplete="off" placeholder="Nombre del jugador 1" required />
+                <input id="player-one" name="playerOne" maxlength="20" autocomplete="off" placeholder="Nombre del jugador 1" pattern="[^0-9]*" title="El nombre no puede contener números" required />
               </label>
               <label class="name-field" for="player-two">
                 <span class="field-label"><span class="player-dot p2-dot"></span> JUGADOR 2 <small>OLIVA</small></span>
-                <input id="player-two" name="playerTwo" maxlength="20" autocomplete="off" placeholder="Nombre del jugador 2" required />
+                <input id="player-two" name="playerTwo" maxlength="20" autocomplete="off" placeholder="Nombre del jugador 2" pattern="[^0-9]*" title="El nombre no puede contener números" required />
               </label>
               <p id="form-error" class="form-error" role="alert"></p>
               <button class="button button-primary start-button" type="submit">Iniciar partida <span aria-hidden="true">→</span></button>
@@ -128,11 +128,29 @@
           <article class="stat-item"><span>PARTICIPACIONES</span><strong id="stat-appearances">0</strong><small>puestos en juego</small></article>
           <article class="stat-item stat-highlight"><span>LÍDER EN VICTORIAS</span><strong id="stat-leader">—</strong><small id="stat-leader-wins">sin victorias todavía</small></article>
         </section>
+        <section class="report-insights" aria-label="Filtros y gráficos del reporte">
+          <div class="report-filters">
+            <label for="filter-start">Desde<input id="filter-start" type="date" /></label>
+            <label for="filter-end">Hasta<input id="filter-end" type="date" /></label>
+            <label for="filter-player">Jugador<select id="filter-player"><option value="">Todos los jugadores</option></select></label>
+            <button id="reset-report-filters" class="button button-outline" type="button">Limpiar filtros</button>
+          </div>
+          <div class="report-charts">
+            <article class="chart-card">
+              <div class="section-heading"><h2>Partidas en el período</h2><span id="matches-chart-caption"></span></div>
+              <div id="matches-chart" class="bar-chart" role="img" aria-label="Gráfico de partidas en el período"></div>
+            </article>
+            <article class="chart-card">
+              <div class="section-heading"><h2>Respuestas colaborativas</h2><span id="answers-chart-caption"></span></div>
+              <div id="answers-chart" class="category-chart" role="img" aria-label="Porcentaje de respuestas colaborativas"></div>
+            </article>
+          </div>
+        </section>
         <section class="report-columns">
           <div class="report-section"><div class="section-heading"><h2>Tabla por nombre</h2><span id="ranking-count">0 jugadores</span></div><p class="ranking-note">Las estadísticas con el mismo nombre se agrupan.</p><div class="table-scroll"><table><thead><tr><th>JUGADOR</th><th>PARTIDAS</th><th>VICTORIAS</th><th>PUNTOS</th></tr></thead><tbody id="ranking-body"></tbody></table></div></div>
           <div class="report-section history-section"><div class="section-heading"><h2>Últimas partidas</h2><span id="history-count">0 registros</span></div><div id="history-list" class="history-list"></div></div>
         </section>
-        <footer class="report-footer"><span>Las partidas compartidas son visibles para cualquiera que tenga acceso al reporte.</span><span>Descarga el CSV para conservar una copia externa.</span></footer>
+        <footer class="report-footer"><span>Las partidas compartidas son visibles para cualquiera que tenga acceso al reporte.</span><span>Descarga el Excel para conservar una copia externa.</span></footer>
       </main>
       <div id="match-details-overlay" class="modal-layer match-details-layer hidden" role="dialog" aria-modal="true" aria-labelledby="match-details-title">
         <section class="match-details-modal">
@@ -140,6 +158,7 @@
           <p class="eyebrow">RETROALIMENTACIÓN DE LA PARTIDA</p>
           <h2 id="match-details-title"></h2>
           <p id="match-details-summary" class="match-details-summary"></p>
+          <div id="match-details-insights" class="match-details-insights"></div>
           <div id="match-details-body" class="match-details-body"></div>
         </section>
       </div>

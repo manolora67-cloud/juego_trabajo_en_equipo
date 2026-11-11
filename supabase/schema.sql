@@ -9,6 +9,35 @@ create table if not exists public.matches (
   answers jsonb
 );
 
+alter table public.matches
+  add column if not exists answers jsonb;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conrelid = 'public.matches'::regclass
+      and conname = 'matches_player_one_name_no_digits'
+  ) then
+    alter table public.matches
+      add constraint matches_player_one_name_no_digits
+      check (player_one_name !~ '[0-9]') not valid;
+  end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conrelid = 'public.matches'::regclass
+      and conname = 'matches_player_two_name_no_digits'
+  ) then
+    alter table public.matches
+      add constraint matches_player_two_name_no_digits
+      check (player_two_name !~ '[0-9]') not valid;
+  end if;
+end
+$$;
+
 create index if not exists matches_completed_at_idx
   on public.matches (completed_at desc);
 

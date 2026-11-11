@@ -47,6 +47,11 @@ const feedbackByQuestion: Record<number, string> = {
   9: 'Una visión compartida permite que cada integrante entienda cómo su aporte contribuye a la meta organizacional.',
   10: 'La diversidad de perspectivas amplía las formas de analizar un reto y favorece soluciones innovadoras.',
 }
+const collaborationAreas = [
+  { name: 'Diálogo y escucha', questions: [1, 3, 4, 5] },
+  { name: 'Planeación en equipo', questions: [2, 6, 9] },
+  { name: 'Responsabilidad y diversidad', questions: [7, 8, 10] },
+]
 
 const mazeRows = [
   '#################',
@@ -444,10 +449,120 @@ function closeRecords(): void {
   setScreen(recordsReturnScreen)
 }
 
+function getFilteredMatches(): MatchRecord[] {
+  const startValue = element<HTMLInputElement>('filter-start').value
+  const endValue = element<HTMLInputElement>('filter-end').value
+  const selectedPlayer = element<HTMLSelectElement>('filter-player').value
+  const startTime = startValue ? new Date(`${startValue}T00:00:00`).getTime() : Number.NEGATIVE_INFINITY
+  const endDate = endValue ? new Date(`${endValue}T00:00:00`) : undefined
+  if (endDate) endDate.setDate(endDate.getDate() + 1)
+  const endTime = endDate?.getTime() ?? Number.POSITIVE_INFINITY
+  return matches.filter((match) => {
+    const completedAt = new Date(match.completedAt).getTime()
+    const inDateRange = completedAt >= startTime && completedAt < endTime
+    const hasPlayer = !selectedPlayer || match.players.some((player) => normalizeName(player.name) === selectedPlayer)
+    return inDateRange && hasPlayer
+  })
+}
+
+function updatePlayerFilter(): void {
+  const playerFilter = element<HTMLSelectElement>('filter-player')
+  const selected = playerFilter.value
+  const players = new Map<string, string>()
+  matches.forEach((match) => match.players.forEach((player) => {
+    const key = normalizeName(player.name)
+    if (!players.has(key)) players.set(key, player.name)
+  }))
+  playerFilter.innerHTML = '<option value="">Todos los jugadores</option>' +
+    [...players.entries()].sort((a, b) => a[1].localeCompare(b[1], 'es'))
+      .map(([key, name]) => `<option value="${escapeHtml(key)}">${escapeHtml(name)}</option>`).join('')
+  if (players.has(selected)) playerFilter.value = selected
+}
+
+function renderReportCharts(filtered: MatchRecord[]): void {
+  const selectedPlayer = element<HTMLSelectElement>('filter-player').value
+  const playerLabel = selectedPlayer ? element<HTMLSelectElement>('filter-player').selectedOptions[0]?.textContent : null
+  const startValue = element<HTMLInputElement>('filter-start').value
+  const endValue = element<HTMLInputElement>('filter-end').value
+  const dates = filtered.map((match) => new Date(match.completedAt)).filter((date) => !Number.isNaN(date.getTime()))
+  const firstMatchTime = dates.reduce((minimum, date) => Math.min(minimum, date.getTime()), Number.POSITIVE_INFINITY)
+  const lastMatchTime = dates.reduce((maximum, date) => Math.max(maximum, date.getTime()), Number.NEGATIVE_INFINITY)
+  let firstDay: Date
+  let lastDay: Date
+  if (startValue || endValue) {
+    firstDay = startValue ? new Date(`${startValue}T00:00:00`) : new Date(Number.isFinite(firstMatchTime) ? firstMatchTime : Date.now())
+    lastDay = endValue ? new Date(`${endValue}T00:00:00`) : new Date(Number.isFinite(lastMatchTime) ? lastMatchTime : Date.now())
+  } else if (dates.length) {
+    firstDay = new Date(firstMatchTime)
+    lastDay = new Date(lastMatchTime)
+  } else {
+    lastDay = new Date()
+    firstDay = new Date()
+    firstDay.setDate(firstDay.getDate() - 6)
+  }
+  firstDay.setHours(0, 0, 0, 0)
+  lastDay.setHours(0, 0, 0, 0)
+  const spanDays = Math.max(1, Math.floor((lastDay.getTime() - firstDay.getTime()) / 86_400_000) + 1)
+  const bucketSize = Math.max(1, Math.ceil(spanDays / 7))
+  const bucketCount = Math.min(7, Math.ceil(spanDays / bucketSize))
+  const buckets = Array.from({ length: bucketCount }, (_, index) => {
+    const start = new Date(firstDay)
+    start.setDate(start.getDate() + index * bucketSize)
+    const end = new Date(start)
+    end.setDate(start.getDate() + Math.min(bucketSize, spanDays - index * bucketSize) - 1)
+    return { start, end, count: 0 }
+  })
+  for (const match of filtered) {
+    const matchDate = new Date(match.completedAt)
+    matchDate.setHours(0, 0, 0, 0)
+    const dayIndex = Math.floor((matchDate.getTime() - firstDay.getTime()) / 86_400_000)
+    const bucketIndex = Math.floor(dayIndex / bucketSize)
+    if (buckets[bucketIndex]) buckets[bucketIndex].count += 1
+  }
+  const maxCount = Math.max(1, ...buckets.map((bucket) => bucket.count))
+  element('matches-chart-caption').textContent = `${filtered.length} ${filtered.length === 1 ? 'partida' : 'partidas'}`
+  element('matches-chart').innerHTML = filtered.length ? buckets.map((bucket) => {
+    const label = bucket.start.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })
+    const rangeLabel = bucket.start.getTime() === bucket.end.getTime()
+      ? label
+      : `${label} – ${bucket.end.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}`
+    const height = bucket.count ? Math.max(8, Math.round(bucket.count / maxCount * 100)) : 0
+    return `<div class="bar-column" aria-label="${rangeLabel}: ${bucket.count} partidas"><span>${bucket.count || ''}</span><div class="bar-track"><i style="height:${height}%"></i></div><small>${rangeLabel}</small></div>`
+  }).join('') : '<p class="chart-empty">No hay partidas para este filtro.</p>'
+
+  const categoryResults = (['Formativa', 'Laboral'] as const).map((category) => {
+    const questionIds = new Set(questions.filter((question) => question.category === category).map((question) => question.id))
+    let correct = 0
+    let answered = 0
+    for (const match of filtered) {
+      match.players.forEach((_, playerIndex) => {
+        if (selectedPlayer && normalizeName(match.players[playerIndex].name) !== selectedPlayer) return
+        const responses = (match.answers ?? []).filter((answer) => answer.player === playerIndex && questionIds.has(answer.questionId))
+        for (const questionId of questionIds) {
+          const attempts = responses.filter((answer) => answer.questionId === questionId)
+          if (!attempts.length) continue
+          answered += 1
+          const question = questions.find((entry) => entry.id === questionId)
+          if (question && attempts.some((answer) => answer.selected === question.correct)) correct += 1
+        }
+      })
+    }
+    return { category, correct, answered, percentage: answered ? Math.round(correct / answered * 100) : 0 }
+  })
+  element('answers-chart-caption').textContent = playerLabel ? `Jugador: ${playerLabel}` : 'Todos los jugadores'
+  element('answers-chart').innerHTML = categoryResults.some((result) => result.answered) ? categoryResults.map((result) =>
+    `<div class="category-bar"><div><span>${result.category}</span><strong>${result.answered ? `${result.percentage}%` : 'Sin datos'}</strong></div><div class="category-track"><i style="width:${result.percentage}%"></i></div><small>${result.correct} aciertos de ${result.answered} respuestas</small></div>`,
+  ).join('') : '<p class="chart-empty">No hay respuestas guardadas para este filtro.</p>'
+}
+
 function renderRecords(): void {
+  updatePlayerFilter()
+  const filteredMatches = getFilteredMatches()
+  const selectedPlayer = element<HTMLSelectElement>('filter-player').value
   const byPlayer = new Map<string, { name: string; games: number; wins: number; points: number }>()
-  for (const match of matches) {
+  for (const match of filteredMatches) {
     match.players.forEach((player, playerIndex) => {
+      if (selectedPlayer && normalizeName(player.name) !== selectedPlayer) return
       const key = normalizeName(player.name)
       const total = byPlayer.get(key) ?? { name: player.name, games: 0, wins: 0, points: 0 }
       total.games += 1
@@ -457,8 +572,9 @@ function renderRecords(): void {
     })
   }
   const ranking = [...byPlayer.values()].sort((a, b) => b.wins - a.wins || b.points - a.points || a.name.localeCompare(b.name, 'es'))
-  const appearances = matches.reduce((sum, match) => sum + match.players.length, 0)
-  element('stat-matches').textContent = String(matches.length)
+  const appearances = filteredMatches.reduce((sum, match) =>
+    sum + match.players.filter((player) => !selectedPlayer || normalizeName(player.name) === selectedPlayer).length, 0)
+  element('stat-matches').textContent = String(filteredMatches.length)
   element('stat-people').textContent = String(byPlayer.size)
   element('stat-appearances').textContent = String(appearances)
   element('stat-leader').textContent = ranking[0]?.name ?? '—'
@@ -467,8 +583,8 @@ function renderRecords(): void {
   element('ranking-body').innerHTML = ranking.length
     ? ranking.map((player, index) => `<tr><td><span class="rank-number">${String(index + 1).padStart(2, '0')}</span><strong>${escapeHtml(player.name)}</strong></td><td>${player.games}</td><td><b class="wins-value">${player.wins}</b></td><td>${player.points}</td></tr>`).join('')
     : '<tr><td class="empty-table" colspan="4">Las partidas completadas aparecerán aquí.</td></tr>'
-  const history = [...matches].reverse()
-  element('history-count').textContent = `${matches.length} ${matches.length === 1 ? 'registro' : 'registros'}`
+  const history = [...filteredMatches].reverse()
+  element('history-count').textContent = `${filteredMatches.length} ${filteredMatches.length === 1 ? 'registro' : 'registros'}`
   element('history-list').innerHTML = history.length
     ? history.map((match) => {
       const winnerLabel = match.winner !== null ? `Ganó ${escapeHtml(match.players[match.winner].name)}` : 'Empate'
@@ -476,6 +592,7 @@ function renderRecords(): void {
       return `<article class="history-row"><div class="history-date">${new Date(match.completedAt).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })}</div><div class="history-match"><button class="history-player" type="button" data-match-id="${escapeHtml(match.id)}" data-player="0" aria-label="${detailsLabel}: ${escapeHtml(match.players[0].name)}"><span class="history-player-name">${escapeHtml(match.players[0].name)}</span><b>${match.players[0].score}</b><small>Ver detalle</small></button><i>:</i><button class="history-player" type="button" data-match-id="${escapeHtml(match.id)}" data-player="1" aria-label="${detailsLabel}: ${escapeHtml(match.players[1].name)}"><span class="history-player-name">${escapeHtml(match.players[1].name)}</span><b>${match.players[1].score}</b><small>Ver detalle</small></button></div><div class="history-winner">${winnerLabel}</div></article>`
     }).join('')
     : '<div class="empty-history">Aún no hay partidas completadas.</div>'
+  renderReportCharts(filteredMatches)
 }
 
 function showMatchDetails(match: MatchRecord, playerIndex: PlayerId, returnToResults: boolean): void {
@@ -484,10 +601,12 @@ function showMatchDetails(match: MatchRecord, playerIndex: PlayerId, returnToRes
   const player = match.players[playerIndex]
   element('match-details-title').textContent = `Resultados de ${player.name}`
   const summary = element('match-details-summary')
+  const insights = element('match-details-insights')
   const body = element('match-details-body')
 
   if (match.answers === null) {
     summary.textContent = 'Esta partida no guardó el detalle de las respuestas. Las partidas anteriores a esta función no se pueden reconstruir.'
+    insights.replaceChildren()
     body.replaceChildren()
   } else {
     const playerAnswers = match.answers.filter((answer) => answer.player === playerIndex)
@@ -496,9 +615,32 @@ function showMatchDetails(match: MatchRecord, playerIndex: PlayerId, returnToRes
       const correct = categoryQuestions.filter((question) =>
         playerAnswers.some((answer) => answer.questionId === question.id && answer.selected === question.correct),
       ).length
-      return { category, correct, total: categoryQuestions.length }
+      const answered = categoryQuestions.filter((question) =>
+        playerAnswers.some((answer) => answer.questionId === question.id),
+      ).length
+      return { category, correct, answered }
     })
-    summary.textContent = `Aciertos en decisiones formativas: ${categories[0].correct} de ${categories[0].total}. Aciertos en decisiones laborales: ${categories[1].correct} de ${categories[1].total}. Esto resume tus elecciones de esta partida; no define quién eres.`
+    summary.textContent = `Decisiones formativas: ${categories[0].correct} aciertos de ${categories[0].answered} respondidas. Decisiones laborales: ${categories[1].correct} aciertos de ${categories[1].answered} respondidas. Esto resume tus elecciones de esta partida; no define quién eres.`
+    const outcomes = questions.map((question) => {
+      const attempts = playerAnswers.filter((answer) => answer.questionId === question.id)
+      return { question, answered: attempts.length > 0, correct: attempts.some((answer) => answer.selected === question.correct) }
+    })
+    const areaScores = collaborationAreas.map((area) => {
+      const responses = outcomes.filter((entry) => area.questions.includes(entry.question.id) && entry.answered)
+      return { ...area, answered: responses.length, correct: responses.filter((entry) => entry.correct).length }
+    }).filter((area) => area.answered >= 2)
+    if (!areaScores.length) {
+      insights.innerHTML = '<p class="insight-empty">No hay suficientes respuestas registradas para sugerir fortalezas o temas de práctica.</p>'
+    } else {
+      const strengths = [...areaScores].sort((a, b) => b.correct / b.answered - a.correct / a.answered)[0]
+      const practice = [...areaScores].filter((area) => area.correct < area.answered)
+        .sort((a, b) => a.correct / a.answered - b.correct / b.answered)[0]
+      const strengthText = `En esta partida resolviste colaborativamente ${strengths.correct} de ${strengths.answered} situaciones de ${strengths.name.toLocaleLowerCase('es')}.`
+      const practiceText = practice
+        ? `Puedes seguir practicando ${practice.name.toLocaleLowerCase('es')}: revisa la retroalimentación de las preguntas de este tema.`
+        : 'En las áreas con respuestas registradas elegiste las alternativas colaborativas. ¡Sigue poniendo esas ideas en práctica!'
+      insights.innerHTML = `<article class="insight-card insight-strength"><strong>Fortaleza observada</strong><p>${strengthText}</p></article><article class="insight-card insight-practice"><strong>Para seguir practicando</strong><p>${practiceText}</p></article>`
+    }
     body.innerHTML = questions.map((question) => {
       const attempts = playerAnswers.filter((answer) => answer.questionId === question.id)
       const correct = attempts.some((answer) => answer.selected === question.correct)
@@ -552,7 +694,8 @@ function refreshSetupStats(): void {
 }
 
 async function exportExcel(): Promise<void> {
-  if (!matches.length) {
+  const exportMatches = getFilteredMatches()
+  if (!exportMatches.length) {
     window.alert('Todavía no hay partidas para exportar.')
     return
   }
@@ -583,7 +726,7 @@ async function exportExcel(): Promise<void> {
     matchesSheet.getCell('A1').alignment = { vertical: 'middle' }
     matchesSheet.getRow(1).height = 34
     matchesSheet.mergeCells('A2:F2')
-    matchesSheet.getCell('A2').value = `Reporte de partidas · ${matches.length} registros · Generado ${new Date().toLocaleString('es-CO')}`
+    matchesSheet.getCell('A2').value = `Reporte de partidas · ${exportMatches.length} registros · Generado ${new Date().toLocaleString('es-CO')}`
     matchesSheet.getCell('A2').font = { name: 'Aptos', size: 10, italic: true, color: { argb: 'FF536B57' } }
     matchesSheet.getRow(2).height = 22
     const headerRow = matchesSheet.getRow(3)
@@ -594,7 +737,7 @@ async function exportExcel(): Promise<void> {
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF326B45' } }
       cell.alignment = { vertical: 'middle', horizontal: 'center' }
     })
-    for (const [index, match] of matches.entries()) {
+    for (const [index, match] of exportMatches.entries()) {
       const row = matchesSheet.addRow([
         new Date(match.completedAt),
         match.players[0].name,
@@ -617,8 +760,10 @@ async function exportExcel(): Promise<void> {
     matchesSheet.autoFilter = { from: 'A3', to: 'F3' }
 
     const byPlayer = new Map<string, { name: string; games: number; wins: number; points: number }>()
-    for (const match of matches) {
+    const selectedPlayer = element<HTMLSelectElement>('filter-player').value
+    for (const match of exportMatches) {
       match.players.forEach((player, playerIndex) => {
+        if (selectedPlayer && normalizeName(player.name) !== selectedPlayer) return
         const key = normalizeName(player.name)
         const total = byPlayer.get(key) ?? { name: player.name, games: 0, wins: 0, points: 0 }
         total.games += 1
@@ -645,7 +790,7 @@ async function exportExcel(): Promise<void> {
     summarySheet.getCell('A1').alignment = { vertical: 'middle' }
     summarySheet.getRow(1).height = 34
     summarySheet.mergeCells('A2:E2')
-    summarySheet.getCell('A2').value = `${ranking.length} nombres · ${matches.length} partidas`
+    summarySheet.getCell('A2').value = `${ranking.length} nombres · ${exportMatches.length} partidas`
     summarySheet.getCell('A2').font = { name: 'Aptos', size: 10, italic: true, color: { argb: 'FF536B57' } }
     summarySheet.getRow(2).height = 22
     const rankingHeader = summarySheet.getRow(3)
@@ -692,6 +837,17 @@ function setupControls(): void {
     ? 'Las partidas se comparten en el reporte público.'
     : 'Resultados guardados en este dispositivo.'
   const form = element<HTMLFormElement>('players-form')
+  const playerNameInputs = [element<HTMLInputElement>('player-one'), element<HTMLInputElement>('player-two')]
+  playerNameInputs.forEach((input) => {
+    input.addEventListener('input', () => {
+      const cursor = input.selectionStart
+      const beforeCursor = cursor === null ? '' : input.value.slice(0, cursor)
+      const cleaned = input.value.replace(/\p{N}/gu, '')
+      if (cleaned === input.value) return
+      input.value = cleaned
+      if (cursor !== null) input.setSelectionRange(beforeCursor.replace(/\p{N}/gu, '').length, beforeCursor.replace(/\p{N}/gu, '').length)
+    })
+  })
   form.addEventListener('submit', (event) => {
     event.preventDefault()
     const first = element<HTMLInputElement>('player-one').value.trim()
@@ -699,6 +855,10 @@ function setupControls(): void {
     const error = element('form-error')
     if (!first || !second) {
       error.textContent = 'Escriban el nombre de ambos jugadores.'
+      return
+    }
+    if (/[\p{N}]/u.test(first) || /[\p{N}]/u.test(second)) {
+      error.textContent = 'Los nombres no pueden contener números.'
       return
     }
     error.textContent = ''
@@ -783,6 +943,13 @@ function setupControls(): void {
     if (event.key === 'Escape' && !element('match-details-overlay').classList.contains('hidden')) closeMatchDetails()
   })
   element('refresh-records').addEventListener('click', () => void refreshRecords())
+  for (const id of ['filter-start', 'filter-end', 'filter-player']) element(id).addEventListener('change', renderRecords)
+  element('reset-report-filters').addEventListener('click', () => {
+    element<HTMLInputElement>('filter-start').value = ''
+    element<HTMLInputElement>('filter-end').value = ''
+    element<HTMLSelectElement>('filter-player').value = ''
+    renderRecords()
+  })
   element('export-excel').addEventListener('click', () => void exportExcel())
   element('play-again').addEventListener('click', () => startGame())
   element('continue-round').addEventListener('click', advanceQuestion)
