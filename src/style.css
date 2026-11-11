@@ -51,8 +51,8 @@ button { touch-action: none; }
 .wordmark, .game-brand { display: inline-flex; align-items: center; gap: 10px; color: var(--cream); text-decoration: none; }
 .wordmark strong { display: block; font-size: 15px; line-height: 1; font-weight: 800; }
 .wordmark small { display: block; margin-top: 4px; color: #c1d0b1; font-size: 8px; line-height: 1; letter-spacing: 1.2px; font-weight: 700; }
-.brand-symbol { display: grid; width: 38px; aspect-ratio: 1; place-items: center; border: 1px solid rgba(226, 241, 205, .45); border-radius: 12px 4px 12px 4px; color: #d7edbc; background: rgba(57, 169, 0, .28); font-family: "Fraunces", Georgia, serif; font-size: 22px; }
-.brand-symbol.small-symbol { width: 27px; border-radius: 8px 3px 8px 3px; font-size: 17px; }
+.brand-symbol { display: block; width: 38px; aspect-ratio: 1; padding: 3px; border: 1px solid rgba(226, 241, 205, .45); border-radius: 12px 4px 12px 4px; background: var(--cream); object-fit: contain; }
+.brand-symbol.small-symbol { width: 27px; padding: 2px; border-radius: 8px 3px 8px 3px; }
 .button { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 44px; padding: 0 17px; border: 1px solid transparent; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 700; transition: background .16s ease, border-color .16s ease, transform .16s ease; }
 .button:hover { transform: translateY(-1px); }
 .button-quiet { border-color: rgba(226, 241, 205, .2); background: rgba(7, 37, 25, .25); color: #edf2e3; }

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#143d2b" />
     <meta name="description" content="SENA Team Challenge: juego local para dos jugadores." />
+    <link rel="icon" type="image/png" href="./sena%202.png" />
     <title>SENA Team Challenge</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -16,7 +17,7 @@
       <main id="setup-screen" class="screen setup-screen">
         <header class="topline">
           <a class="wordmark" href="#inicio" aria-label="SENA Team Challenge, inicio">
-            <span class="brand-symbol" aria-hidden="true">S</span>
+            <img class="brand-symbol" src="./sena%202.png" alt="" />
             <span><strong>SENA</strong><small>TEAM CHALLENGE</small></span>
           </a>
           <button id="open-records" class="button button-quiet" type="button"><span aria-hidden="true">▤</span> Registro</button>
@@ -55,7 +56,7 @@
       <main id="game-screen" class="screen game-screen hidden">
         <header class="game-header">
           <button id="leave-game" class="icon-button" type="button" aria-label="Volver al inicio" title="Volver al inicio">←</button>
-          <div class="game-brand"><span class="brand-symbol small-symbol" aria-hidden="true">S</span><span>SENA <b>TEAM CHALLENGE</b></span></div>
+          <div class="game-brand"><img class="brand-symbol small-symbol" src="./sena%202.png" alt="" /><span>SENA <b>TEAM CHALLENGE</b></span></div>
           <div class="round-counter"><span>RONDA</span><strong><b id="round-current">01</b><i>/</i>10</strong></div>
           <div class="timer-block"><span>TIEMPO</span><strong id="timer-value">45</strong><small>s</small></div>
         </header>
@@ -108,7 +109,7 @@
       </main>
 
       <main id="records-screen" class="screen records-screen hidden">
-        <header class="records-header"><button id="records-back" class="icon-button" type="button" aria-label="Volver">←</button><div class="game-brand"><span class="brand-symbol small-symbol" aria-hidden="true">S</span><span>SENA <b>REPORTE DE PARTIDAS</b></span></div><span id="records-device-note" class="records-device-note">DATOS LOCALES</span></header>
+        <header class="records-header"><button id="records-back" class="icon-button" type="button" aria-label="Volver">←</button><div class="game-brand"><img class="brand-symbol small-symbol" src="./sena%202.png" alt="" /><span>SENA <b>REPORTE DE PARTIDAS</b></span></div><span id="records-device-note" class="records-device-note">DATOS LOCALES</span></header>
         <section class="report-heading">
           <div>
             <p class="eyebrow">SEGUIMIENTO DE RESULTADOS</p>
